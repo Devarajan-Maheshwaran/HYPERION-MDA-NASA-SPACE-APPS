@@ -1,0 +1,34 @@
+{
+  "manifest_version": 1,
+  "study_id": "OSD-575",
+  "study_title": "SpaceX Inspiration4 Blood Serum Metabolic Panel and Immune/Cardiac Cytokine Arrays (Comprehensive Metabolic Panel and Multiplex)",
+  "study_description_excerpt": "The SpaceX Inspiration4 mission was a 3-day mission with four private astronauts to low Earth orbit that occurred in September 2021.",
+  "mission": "SpaceX Inspiration4 (OSDR record: Mission Start 09/16/2021, Mission End 09/18/2021)",
+  "principal_investigator": "Christopher Mason (Weill Cornell Medicine), per OSDR record",
+  "osdr_submission_date": "05-Dec-2022",
+  "osdr_public_release_date": "14-May-2024",
+  "osdr_metadata_api": "https://osdr.nasa.gov/osdr/data/osd/meta/575",
+  "osdr_files_api": "https://osdr.nasa.gov/osdr/data/osd/files/575",
+  "file_name": "LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv",
+  "file_category": "Comprehensive Metabolic Panel / Tabular Results Files / Original Submitted",
+  "file_listing_flags": {"restricted": false, "visible": true},
+  "download_url": "https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv",
+  "file_size_bytes": 25275,
+  "sha256": "dab247eb794edab59aaaa683c85fd1f2dbf4ae3684872739338e10ead4192a0c",
+  "retrieved_utc": "2026-11-14T07:40:15Z",
+  "retrieval_note": "Computed from the downloaded file. Two independent retrievals on 2026-11-14 (curl and urllib) were byte-identical; size equals the OSDR file listing.",
+  "related_publications": [
+    {"title": "Collection of Biospecimens from the Inspiration4 Mission Establishes the Standards for the Space Omics and Medical Atlas (SOMA)", "doi": "10.1038/s41467-024-48806-z"},
+    {"title": "The Space Omics and Medical Atlas (SOMA) and international astronaut biobank", "doi": "10.1038/s41586-024-07639-y"}
+  ],
+  "dataset_doi": null,
+  "dataset_doi_note": "The OSDR study metadata DOI fields were empty when retrieved. For the dataset citation, use the 'Citation' panel on the OSDR study page.",
+  "license": null,
+  "license_status": "No license is stated in the OSD-575 study metadata. OSDR terms page: 'These data are provided under NASA's open access policy' and 'Users are responsible for knowing their rights to distribute information.' NASA's CC0 default (science.data.nasa.gov/about/license) applies to 'NASA-led mission data'; Inspiration4 was a private mission, for which that page says 'the data are provided as is'. Redistribution rights are therefore not confirmed: this project downloads the file on demand and does not bundle it.",
+  "acknowledgment_suggested_by_osdr": "Data are courtesy of the NASA Open Science Data Repository",
+  "known_discrepancies": [
+    "The OSDR study description lists post-flight samples R+1, R+45 and R+82, but the CMP file also contains R+194 rows (76 rows). Both are shown as given; this project does not resolve the difference.",
+    "One subject/analyte/timepoint row is absent from the file (C002, BUN/CREATININE RATIO, R+82)."
+  ],
+  "scope_note": "Sparse serum clinical-chemistry panel (7 timepoints) for the four Inspiration4 crew. Not continuous wearable telemetry, not ISS or long-duration data, and not a representative astronaut population."
+}

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hyperion-mda"
+version = "0.1.0"
+description = "Local-only research prototype for exploring health telemetry workflows"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+hyperion-mda = "hyperion_mda.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hyperion_mda = ["data/osdr/*.json", "data/physionet/*.json"]
