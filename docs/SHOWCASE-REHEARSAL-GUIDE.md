@@ -61,7 +61,7 @@ Prepared 2026-11-15 for the live showcase.
 > "These signals come from a fixed formula, and the banner says that in every way it can. The point of this lane is the software boundary: every sample passes through a `WearableAdapter` interface that rejects non-finite values, wrong units, unknown channels and time going backwards. A real device would plug in here. No real device adapter exists today."
 
 **5a. Recorded lane**
-> "This is real recorded data, but not astronaut data. It's PhysioNet's *Wrist PPG During Exercise*: eight adults in a terrestrial lab, open ODC-By licence. We cache it locally and never redistribute it. I wrote the WFDB file reader myself using only the standard library. It was cross-checked against the official `wfdb` package: all 19 records and all 11,388 beat annotations are identical."
+> "This is real recorded data, but not astronaut data. It's PhysioNet's *Wrist PPG During Exercise*: eight adults in a terrestrial lab, open ODC-By licence. The raw recordings are cached locally and aren't in the repo; the derived experiment results are, which that licence allows with attribution. I wrote the WFDB file reader myself using only the standard library. It was cross-checked against the official `wfdb` package: all 19 records and all 11,388 beat annotations are identical."
 
 **5b. HR check**
 > "Now the honest part. This is a simple heart-rate estimate from the wrist PPG, compared with heart beats hand-marked on the chest ECG. Its parameters were fixed before we looked at results. On low-resistance cycling, the median error is about 2 bpm. On running it's 84 bpm. Motion destroys the wrist signal. We show that rather than hide it."
@@ -102,7 +102,7 @@ The design points worth naming:
 - **Network access:** only the two explicit fetch commands use the network. They send no health data.
 - **Lane separation:** the lanes import nothing from one another, and tests check this. Wearable samples are a different data type from NASA records.
 - **M6 isolation:** M6 reads the app's modules but never writes to them, and nothing in the app imports M6.
-- **Tests:** 173 in the app suite plus 27 in M6, all passing on 2026-11-15.
+- **Tests:** 173 in the app suite plus 27 in M6 passed on 2026-11-15 (the captured evidence logs). The suites now collect **185** and **28**; recompute with `python scripts/report_counts.py` and quote your own run's output.
 
 ---
 
@@ -202,6 +202,6 @@ M7: motion-artifact-resistant heart rate using accelerometer-referenced spectral
 
 ---
 
-**Two stale documents to be aware of:**
-- **IMPLEMENTATION-STATUS.md**, the M2 row: it still says "41 channels" and "no SIMULATED or RECORDED channels". The live run shows 49 channels, including 5 recorded and 3 simulated. If a judge reads that row, the panel count of 49 is the correct one.
-- **DEMO-RUNBOOK.md** is superseded by the mentor guide. It already carries a note saying so.
+**Document notes:**
+- **IMPLEMENTATION-STATUS.md**, the M2 row: previously said "41 channels" and "no SIMULATED or RECORDED channels". **Corrected** — it now states 49 channels (19 measured, 5 recorded, 3 simulated, 22 unavailable), computed from `signal_registry.CHANNELS` by `python scripts/report_counts.py`, matching the live panel.
+- **DEMO-RUNBOOK.md** is superseded by the mentor guide. It already carries a note saying so, and its stale "102 tests" line is now annotated with the current counts.

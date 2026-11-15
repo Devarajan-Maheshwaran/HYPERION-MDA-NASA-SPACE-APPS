@@ -9,7 +9,9 @@ Mapping (nothing inferred or converted):
                   pre-flight baseline, "R+n" (n days after return) is a post-flight
                   observation. No calendar date is created.
 Not used: SEX (demographic, not needed), RANGE_MIN/RANGE_MAX (the laboratory's
-reference ranges are not used as thresholds), TEST_TYPE (checked to be "CMP").
+reference ranges are not used as thresholds). TEST_TYPE must be "CMP": any other
+value is an explicit scoring rejection, so the row is kept visible with its source
+line but is never a baseline and never scored.
 
 Scoring for this source: each post-flight value is compared descriptively with the
 same subject's pre-flight values for the same analyte and unit. The illustrative
@@ -30,6 +32,8 @@ from .osdr_source import VerifiedFile
 EXPECTED_COLUMNS = ("ANALYTE", "VALUE", "RANGE_MIN", "RANGE_MAX", "UNITS",
                     "TEST_TYPE", "SUBJECT_ID", "SEX", "timepoint")
 EXPECTED_TEST_TYPE = "CMP"
+# Explicit rejection reason carried on the record and shown in the score-basis column.
+WRONG_ASSAY_REJECTION = "wrong assay type"
 MISSING_TOKEN = "NA"
 SOURCE_LABEL = "NASA OSDR OSD-575 (serum CMP)"
 QUALITY_NOT_PROVIDED = "not provided by source"
@@ -154,6 +158,7 @@ def parse_cmp_rows(path: Path, file_label: str | None = None) -> tuple[list[Tele
 
 def _to_record(row: dict, line: int, label: str, report: ImportReport) -> TelemetryRecord:
     flags: list[str] = []
+    rejection_reason = ""
     analyte, unit, subject = row["ANALYTE"], row["UNITS"], row["SUBJECT_ID"]
     raw_value = row["VALUE"]
     if raw_value == MISSING_TOKEN:
@@ -172,6 +177,7 @@ def _to_record(row: dict, line: int, label: str, report: ImportReport) -> Teleme
     if row["TEST_TYPE"] != EXPECTED_TEST_TYPE:
         flags.append(f"TEST_TYPE is {row['TEST_TYPE']!r}, expected 'CMP'")
         report.wrong_test_type_lines.append(line)
+        rejection_reason = WRONG_ASSAY_REJECTION
     if not subject:
         flags.append("Missing SUBJECT_ID")
     if (analyte, unit) not in OSDR_CMP_PAIRS:
@@ -190,6 +196,7 @@ def _to_record(row: dict, line: int, label: str, report: ImportReport) -> Teleme
         signal=analyte, value=value, unit=unit, context="", source=SOURCE_LABEL,
         quality=QUALITY_NOT_PROVIDED, record_type=record_type, flags=tuple(flags),
         order_key=order_key, source_ref=f"line {line} of {label}",
+        rejection_reason=rejection_reason,
     )
 
 
@@ -198,7 +205,9 @@ def analyse(records: list[TelemetryRecord], report: ImportReport) -> list[Teleme
     scored = add_baseline_scores(flag_duplicates(records), OSDR_CMP_PROFILE)
     final = []
     for r in scored:
-        if r.record_type == UNCLASSIFIED:
+        # An explicit source rejection keeps its own note; the unrecognised timepoint
+        # stays visible in the row flags either way.
+        if r.record_type == UNCLASSIFIED and not r.scoring_rejected:
             r = replace(r, score_note="Not classified: unrecognised timepoint label; not scored")
         final.append(r)
     timed = sorted((r for r in final if r.order_key is not None),

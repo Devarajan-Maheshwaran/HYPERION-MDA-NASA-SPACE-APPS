@@ -3,7 +3,7 @@
 > **Note (2026-11-15): for the mentor review, use [MENTOR-DEMO-GUIDE.md](MENTOR-DEMO-GUIDE.md).** It covers all four lanes and the M6 research experiment.
 >
 > This runbook still describes the NASA-lane walkthrough correctly, but parts of it predate the demo lanes, M5 and M6:
-> - **Test count:** it says "102 tests". The current suites are 173 in `tests/` plus 27 in `experiments/m6/tests/`.
+> - **Test count:** step 4 below still says "102 tests". The current suites collect **185** in `tests/` plus **28** in `experiments/m6/tests/` — run `python scripts/report_counts.py` to recompute. The number `unittest` reports as *run* is lower when classes skip (no Tkinter, no dataset cache).
 > - **"Is anything synthetic?" answer:** the app now also has a separate, clearly labelled SIMULATED playback lane.
 
 How to present the **candidate** build. Everything below describes behaviour in the current code, checked on 2026-11-14 (Windows 11, Python 3.14.2, 125% display scaling).
@@ -11,7 +11,7 @@ How to present the **candidate** build. Everything below describes behaviour in 
 > **What this is:** a tested local software prototype that downloads one **real, public** NASA OSDR file (OSD-575 serum Comprehensive Metabolic Panel), verifies it by SHA-256, imports it with a schema check, and shows each person's post-flight values **descriptively** against their own pre-flight values.
 > **What this is not:** a medical device, a diagnosis or risk tool, wearable telemetry, or a representative astronaut dataset. There is **no** clinical validation, **no** NASA approval or standards compliance, and **no** flight readiness. The data is **sparse serum lab data from the 4 Inspiration4 crew**: a 3-day private mission, with 7 timepoints.
 
-This runbook is not matched to any presentation deck; none is in the project. The earlier synthetic-data demo is preserved, with its own runbook, inside `dist/HYPERION-MDA-Prototype.zip`.
+This runbook is not matched to any presentation deck; none is in the project. Earlier versions pointed at a frozen synthetic-data demo in `dist/HYPERION-MDA-Prototype.zip`; **that archive is not in this repository** (`dist/` is git-ignored, and no builder for it is included). Use the current build from source.
 
 ---
 
@@ -30,7 +30,7 @@ This runbook is not matched to any presentation deck; none is in the project. Th
    ```
    Expected output: `Verified LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv (25275 bytes, SHA-256 dab247eb…a0c) -> …\.hyperion_mda\osdr\OSD-575\…`.
    **If it prints `OSDR download FAILED`, stop.** Don't present real-data results. The app will not substitute other data.
-4. Rerun the tests. Expect `Ran 102 tests … OK`, with nothing skipped.
+4. Rerun the tests. Expect `OK` with no failures or errors. The suite collects 185 tests (`python scripts/report_counts.py`); the `Ran N` figure depends on what is installed and cached — the OSDR real-file tests stop skipping once step 3 succeeds, but the PhysioNet and Tkinter classes still skip unless that cache and Tk support are present. Read the skip reasons rather than matching a fixed number.
 5. Once the file is cached, the demo itself needs no internet.
 
 ## 2. Live walkthrough

@@ -67,7 +67,7 @@ Each command verifies every file by SHA-256 and saves nothing if any check fails
 .venv\Scripts\python -m unittest discover -s experiments/m6/tests
 ```
 
-Expected: `Ran 173 tests … OK`, then `Ran 27 tests … OK`. If the real-data tests skip, the reason is printed; go back to step 2.
+Expected: `OK` for both, with no failures or errors. The suites collect **185** tests in `tests/` and **28** in `experiments/m6/tests/` (recompute with `python scripts/report_counts.py`). With the `.venv`, Tkinter and both caches present on the development machine, the historical Windows run reported `Ran 173 … OK` / `Ran 27 … OK`; those logs predate the R1 assay-rejection tests and one added M6 provenance test, so today's totals are higher. **Quote the number your own run prints.** If the real-data tests skip, the reason is printed; go back to step 2.
 
 The main suite also prints `OSDR download FAILED: boom` and `PhysioNet download FAILED: boom`. **These are expected.** They come from tests that inject a download failure on purpose, to check that nothing is saved when a download fails. Mention this if the terminal is on screen.
 
@@ -200,9 +200,10 @@ All commands run from the project root.
 | Replay recorded dataset | In the app: **Recorded wearable (PhysioNet)…** → choose record → **Play record** → **Start** | Playback window, RECORDED-NON-ASTRONAUT | instant |
 | Run the M6 experiment | `.venv\Scripts\python experiments\m6\run_m6.py` | `M6 run complete: 3332 windows; A1 identical to M5: True` | about 11 s |
 | Run the independent verifier | `.venv\Scripts\python experiments\m6\verify_m6.py` | `1187 checks passed, 0 failed` | a few s |
-| Run the main test suite | `.venv\Scripts\python -m unittest discover -s tests` | `Ran 173 tests … OK` | about 12 s |
-| Same suite, system Python | `python -m unittest discover -s tests` | `Ran 173 tests … OK` | about 13–24 s |
-| Run the M6 tests | `.venv\Scripts\python -m unittest discover -s experiments/m6/tests -v` | `Ran 27 tests … OK` | about 10 s |
+| Run the main test suite | `.venv\Scripts\python -m unittest discover -s tests` | `OK`; 185 collected, `Ran N` depends on skips | about 12 s |
+| Same suite, system Python | `python -m unittest discover -s tests` | `OK`; 185 collected, `Ran N` depends on skips | about 13–24 s |
+| Run the M6 tests | `.venv\Scripts\python -m unittest discover -s experiments/m6/tests -v` | `OK`; 28 collected, `Ran N` depends on skips | about 10 s |
+| Recompute the quoted counts | `python scripts/report_counts.py` | `channels: 49 …`, `tests/: 185 collected`, `experiments/m6/tests/: 28 collected` | instant |
 
 The same commands as copy-ready blocks:
 
@@ -298,7 +299,7 @@ Screenshots 11–12 can be taken from `experiments/m6/outputs/report.md` on the 
 | 7 | `07-recorded-hr-check.png` | All 19 HR-check rows plus the parameter note |
 | 8 | `08-fl-simulation.png` | FL banner, flow diagram, round table |
 | 9 | `09-m6-run-verify.png` | Terminal showing the `run_m6.py` and `verify_m6.py` output lines |
-| 10 | `10-tests.png` | Terminal showing `Ran 173 tests … OK` and `Ran 27 tests … OK` |
+| 10 | `10-tests.png` | Terminal showing both suites ending `OK`. The captured 2026-11-15 evidence log shows `Ran 173` / `Ran 27`; a fresh capture today will show higher totals (185 / 28 collected) |
 | 11 | `11-m6-report-hr.png` | `report.md` §3.1 aggregate HR table |
 | 12 | `12-m6-report-activity.png` | `report.md` §5.1 activity table and B1 confusion matrix |
 

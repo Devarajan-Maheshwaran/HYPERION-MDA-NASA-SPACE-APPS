@@ -322,6 +322,8 @@ The s4 fold (run only) and the s9 fold (walk only) are single-class, so their pe
 | **5. Reproducibility** | Two clean runs, byte comparison; full test suite (173 existing plus new tests). | — | — | No |
 | **6. UI and docs** | Optional read-only report view; documentation updates (§10). | — | — | **Yes**: before any commit |
 
+*Count note (added after the R6 review): "173 existing" in stage 5 is the frozen figure at drafting. The app suite now collects 185 and the M6 suite 28 — `python scripts/report_counts.py`. The frozen protocol text is otherwise unchanged.*
+
 **Open decisions for the user at stage 0:**
 1. Hyperparameter option 1 (fixed, recommended) or option 2 (nested).
 2. numpy/scipy implementations (recommended, no new dependency) or adding scikit-learn to `.venv`.
@@ -355,7 +357,7 @@ The s4 fold (run only) and the s9 fold (walk only) are single-class, so their pe
 - the main window's buttons
 - the NASA lane modules
 - the signal registry
-- the three ZIPs in `dist/`
+- the three ZIPs in `dist/` *(frozen wording; no `dist/` archives are present in this repository — `dist/` is git-ignored and no builder is included)*
 
 **Note on the config location:** `tests/test_packaging.py` asserts the exact list of package-data globs and the exact set of shipped JSON files. A config placed under `src/hyperion_mda/data/` would break those two existing tests. That is why the config lives in `experiments/m6/`.
 

@@ -17,6 +17,10 @@ Data-integrity exclusions (R1 in docs/REQUIREMENTS-TRACEABILITY.md):
     * Readings with the same subject and signal at the same instant (offsets
       compared as absolute times) are all flagged as duplicates and none of
       them is used for scoring.
+    * A source adapter may set ``rejection_reason`` on a row it cannot vouch
+      for (e.g. the OSDR adapter when TEST_TYPE is not the expected assay).
+      Such a row is never a baseline and never scored, and the reason is
+      shown. Display flags alone never block scoring.
 """
 
 from __future__ import annotations
@@ -93,11 +97,20 @@ class TelemetryRecord:
     # "L-92"/"R+1" labels). Never converted to dates. None for timestamped CSV rows.
     order_key: tuple[int, int] | None = None
     source_ref: str = ""  # e.g. "line 7 of <file>"; shown in the details panel
+    # Explicit, source-assigned reason this row must never be scored (e.g. "wrong assay
+    # type"). Empty for every row the adapter accepts. This is not derived from `flags`:
+    # a display flag on its own never excludes a row.
+    rejection_reason: str = ""
 
     @property
     def when(self):
         """Ordering value: the parsed timestamp, or the mission-relative key."""
         return self.parsed_time if self.parsed_time is not None else self.order_key
+
+    @property
+    def scoring_rejected(self) -> bool:
+        """True when the source adapter explicitly rejected this row for scoring."""
+        return bool(self.rejection_reason)
 
     @property
     def has_value(self) -> bool:
@@ -236,7 +249,8 @@ def add_baseline_scores(records: list[TelemetryRecord],
     A baseline is eligible for an observation only if it has a value, the same
     subject/signal/unit, a supported signal-unit pair, accepted quality (when the
     profile requires a quality label), a valid time (timestamp or mission-relative
-    label), is not a duplicate, and was recorded strictly before the observation.
+    label), is not a duplicate, was recorded strictly before the observation, and
+    carries no explicit ``rejection_reason`` from its source adapter.
     """
     baselines: dict[tuple[str, str, str], list[tuple[object, float]]] = {}
     for record in records:
@@ -248,6 +262,8 @@ def add_baseline_scores(records: list[TelemetryRecord],
         if record.record_type == "baseline":
             if _baseline_usable(record, profile):
                 note = "Baseline reading (eligible for later observations)"
+            elif record.scoring_rejected:
+                note = f"Baseline reading excluded; not scored: {record.rejection_reason}"
             elif not record.has_value:
                 note = "Baseline reading excluded (value missing in source; not imputed)"
             elif record.has_group_key and not _pair_ok(record, profile):
@@ -301,11 +317,17 @@ def _quality_ok(record: TelemetryRecord, profile: ScoringProfile) -> bool:
 def _baseline_usable(record: TelemetryRecord, profile: ScoringProfile = DEMO_PROFILE) -> bool:
     return (record.record_type == "baseline" and record.has_value and _quality_ok(record, profile)
             and record.has_group_key and record.when is not None
-            and _pair_ok(record, profile) and not record.is_duplicate)
+            and _pair_ok(record, profile) and not record.is_duplicate
+            and not record.scoring_rejected)
 
 
 def _score_observation(record: TelemetryRecord, candidates: list[tuple[object, float]],
                        profile: ScoringProfile = DEMO_PROFILE) -> TelemetryRecord:
+    if record.scoring_rejected:
+        # The row stays visible with its value, flags and source reference. Any score
+        # computed before the rejection was set is cleared, never left behind.
+        return replace(record, z_score=None,
+                       score_note=f"Row kept visible; not scored: {record.rejection_reason}")
     if not record.has_value:
         return replace(record, score_note="No score: value missing in source (NA); not imputed")
     if not record.has_group_key:

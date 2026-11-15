@@ -1,0 +1,12 @@
+# Dependencies for the workstation API only.
+# The desktop app and the existing tests remain standard-library only.
+# Install into a separate virtualenv:
+#   python -m venv .venv-api
+#   .venv-api/bin/pip install -r requirements-api.txt
+fastapi==0.163.1
+uvicorn==0.54.0
+pydantic==2.14.3
+httpx==0.28.1          # used by fastapi.testclient in tests_api/
+pytest==9.2.0
+numpy>=1.26,<3         # optional DSP / core tests; API state still degrades honestly without it
+scipy>=1.11,<2

@@ -67,7 +67,7 @@ First written 2026-11-14. **Gate re-check: 2026-11-14** (§3 and §6). Each entr
 |---|---|---|
 | **Permitted use** | Owner page: *"You may use this data for scientific, non-commercial purposes"* | **VERIFIED** |
 | **Attribution** | Owner page: *"provided that you give credit to the owners when publishing any work based on this data"*, citing Schmidt et al., ICMI 2018 | **VERIFIED** |
-| **Redistribution** | Owner page: **not stated**. UCI defers to the owners. Third-party pages claim it's prohibited, but those aren't evidence here. | **NOT VERIFIED.** The project policy anyway is *never redistribute*: fetch on demand, keep the data out of the repo and ZIPs. |
+| **Redistribution** | Owner page: **not stated**. UCI defers to the owners. Third-party pages claim it's prohibited, but those aren't evidence here. | **NOT VERIFIED.** The project policy for WESAD is to track **neither raw nor derived** WESAD data: fetch on demand, keep it out of the repo and any archive. Nothing WESAD is downloaded or tracked today (§3c). |
 | Does this project's use qualify as "scientific, non-commercial"? | A hackathon methods demonstration with no commercial use is *plausibly* within scope. That is a judgement, not owner confirmation. | **NEEDS TEAM DECISION** (or owner confirmation) |
 | **Official download and archive** | Owner-linked sciebo share; one `WESAD.zip` of about 2.5 GB | **VERIFIED** (location). No checksum is published by the owners. |
 | **File formats** | Not stated on the owner page or in the paper. Expected to be in the readme inside the archive. | **NOT VERIFIED** |
@@ -99,7 +99,7 @@ The team must also decide whether this hackathon use falls within "scientific, n
 
 | Item | Evidence | Status |
 |---|---|---|
-| Terms | [Owner page](https://physionet.org/content/wrist/1.0.0/): *Open Data Commons Attribution License v1.0*; open access. Cite Jarchi & Casson, *Data* 2017 (doi:10.3390/data2010001) and PhysioNet. | **VERIFIED.** This project still never redistributes. |
+| Terms | [Owner page](https://physionet.org/content/wrist/1.0.0/): *Open Data Commons Attribution License v1.0*; open access. Cite Jarchi & Casson, *Data* 2017 (doi:10.3390/data2010001) and PhysioNet. | **VERIFIED.** Raw recordings are never bundled; **derived M6 outputs are tracked** — see §3c. |
 | Documentation | Owner page: 8 participants; chest ECG (Actiwave) and wrist PPG plus IMU (Shimmer 3 GSR+), all at 256 Hz; walk, run, low- and high-resistance cycling; hand-marked reference ECG R-peaks; WFDB format. | **VERIFIED** |
 | Files and checksums | 59 files in `SHA256SUMS.txt` (19 records; participants s1–s6, s8, s9; no s7). All downloaded and verified. The hash of the sums file is pinned in `wrist-1.0.0.provenance.json`. | **VERIFIED** |
 | Format and units | WFDB format 16. Units from the headers: ECG and PPG "mV", accelerometer m/s² (`ms^-2`), gyroscope °/s, magnetometer Ga. The reader is checked against the header checksums and cross-checked against the official `wfdb` package (identical). | **VERIFIED.** Amplitudes are not calibrated (ECG values in the hundreds to thousands of "mV" are implausible as physical values). |
@@ -108,6 +108,25 @@ The team must also decide whether this hackathon use falls within "scientific, n
 | Use | **RECORDED-NON-ASTRONAUT methods lane only.** Never astronaut data, never merged with NASA records, no clinical meaning. | **GO** (non-astronaut methods demo) |
 
 **PhysioNet "Wearable Exam Stress" v1.0.0** ([page](https://physionet.org/content/wearable-exam-stress/1.0.0/)) is open (ODC-By 1.0), but its outcomes are **exam grades, not stress labels**. It is not used for stress tasks.
+
+## 3c. What is actually tracked in this repository
+
+Earlier wording said this project "never redistributes" data. That was imprecise: it is true of the **raw recordings**, but not of **derived results**. The exact position, checked against `git ls-files`:
+
+| Artifact | Tracked in git? | Notes |
+|---|---|---|
+| Raw PhysioNet `.hea` / `.dat` / `.atr` files (59 files) | **No** | Fetched on demand into a cache outside the repository (`~/.hyperion_mda/`, or `HYPERION_MDA_DATA_DIR`). |
+| Raw NASA OSD-575 CMP CSV | **No** | No licence is stated in the study record, so it is not bundled; fetched on demand and SHA-256-verified. |
+| Any WESAD file | **No** | The gate is NO-GO; nothing was downloaded. |
+| Provenance manifests (URLs, sizes, SHA-256, licence text, citations) | **Yes** | `src/hyperion_mda/data/osdr/OSD-575.provenance.json`, `src/hyperion_mda/data/physionet/wrist-1.0.0.provenance.json`. Metadata only, no measurements. |
+| **Derived M6 outputs** (14 files: per-window features, per-window predictions, per-participant/per-record metrics, `results.json`, `report.md`) | **Yes** | `experiments/m6/outputs/`. These contain participant IDs (s1–s9), record names, window positions, reference HR and model predictions **derived from the PhysioNet recordings**. They are not raw signal samples. |
+| Synthetic test fixture | **Yes** | `tests/fixtures/simulated_telemetry.csv`; generated for tests, not measured. |
+
+Why this is permitted for PhysioNet and not assumed elsewhere: the dataset is released under **ODC-By 1.0**, which allows redistribution with attribution. The required citations (Jarchi & Casson 2017; the standard PhysioNet citation) and the licence string are recorded in `src/hyperion_mda/data/physionet/wrist-1.0.0.provenance.json` and in this inventory (§3b), so they travel with the repository alongside the derived files. Storing derived outputs in the repo was an **approved deviation** from the frozen protocol's "outside the repository" default (`docs/M6-LOPO-PROTOCOL.md`, §7.2 row of the deviations table, approved decision 4). It is a team decision about open, non-astronaut data — **not** a precedent for crew data.
+
+**Known gap (not fixed here):** the generated `experiments/m6/outputs/report.md` and `results.json` do **not** themselves carry the citation or licence text — they name the dataset but cite no authors. Attribution therefore depends on the manifest elsewhere in the repo. If those output files are ever extracted or shared on their own, the citation must be added to the report generator first. That is a change to M6 code and is out of scope for this documentation pass.
+
+**Rule going forward:** raw third-party recordings stay out of git; derived artifacts are tracked only when the source licence permits it and the attribution travels with them. No astronaut-derived per-window data may be committed without a separate, explicit decision.
 
 ## 4. Synthetic data
 
@@ -120,7 +139,7 @@ The team must also decide whether this hackathon use falls within "scientific, n
 
 | # | Question | Status after 2026-11-14 gate re-check |
 |---|---|---|
-| Q1 | WESAD terms | **Partly resolved.** Permitted use and attribution are verified from the owner page. Redistribution isn't stated (we never redistribute anyway). The team must decide whether hackathon use counts as scientific, non-commercial. |
+| Q1 | WESAD terms | **Partly resolved.** Permitted use and attribution are verified from the owner page. Redistribution isn't stated (we track no WESAD data, raw or derived, anyway). The team must decide whether hackathon use counts as scientific, non-commercial. |
 | Q2 | WESAD label codes, file formats, units, discarded IDs, checksums | **Open. Blocks the gate.** These are only in the archive's readme (§3.3 A or B). |
 | Q3 | Public astronaut wearable or vital-sign data | **Not found in public sources searched** (§2.1). Bio-Monitor data exists but is not public; LSDA is request-based with a DUA and review. Who could request it, and under what authorisation, is open. |
 | Q4 | Public ISS cabin ppCO₂ / radiation time series | Not found |

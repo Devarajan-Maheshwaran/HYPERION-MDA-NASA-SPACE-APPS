@@ -1,19 +1,35 @@
 # HYPERION-MDA — OSD-575 real-data candidate
 
+> **New: the web workstation (API + React frontend).** A FastAPI composition layer and a
+> React 18 / TypeScript-strict / Vite / Tailwind / Recharts frontend implement the crew-health
+> workstation as a clean, light-theme clinical product with exactly three views: Overview,
+> Crew Workstation, and ML Architecture & Docs. The backend API and its tests are unchanged.
+> **Run it (one command):** `bash run_workstation.sh` → http://localhost:8000 ·
+> [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
+> **Live workstation:** dual-mode data engine, five labelled scenarios, 40/60 body-map +
+> safety-gate layout, PVT / ultrasound caliper / vitals exams, ML benchmark honesty panel and
+> local SHA-256 audit chain (`HealthAudit.sol` reference only, not deployed).
+> **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md) ·
+> **Frontend design system:** [docs/FRONTEND-DESIGN.md](docs/FRONTEND-DESIGN.md).
+> **Safety deviations from the deck:** [docs/SAFETY_ISSUES.md](docs/SAFETY_ISSUES.md) — read this
+> before presenting. Gate 1 ships uncalibrated, activity is per-person scale-normalised (not
+> ENMO in g), non-rate findings are never suppressed, and no treatment advice is issued.
+> The existing desktop app, data modules, M6 experiment and their tests are **unchanged**.
+
 A local desktop prototype that loads **real, public NASA OSDR data** (study OSD-575), verifies the file against a recorded SHA-256, imports it with a schema check, and shows a **descriptive** comparison of each person's post-flight serum values against their own pre-flight values.
 
 This is a tested software prototype. It is **not** a medical device or diagnostic system. It has **no** clinical validation, NASA approval, standards compliance or flight readiness, and it makes no claims about model performance.
 
 **Presenting the demo?** Follow [docs/DEMO-RUNBOOK.md](docs/DEMO-RUNBOOK.md). Data source details are in [docs/OSDR-OSD575-DATA.md](docs/OSDR-OSD575-DATA.md).
 
-> This is a **candidate** build. The earlier frozen demo (synthetic-data prototype) is preserved unchanged as `dist/HYPERION-MDA-Prototype.zip`.
+> This is a **candidate** build. Earlier write-ups referenced a frozen synthetic-data demo at `dist/HYPERION-MDA-Prototype.zip`. **That archive is not in this repository** (`dist/` is git-ignored) and no builder for it is included, so nothing here depends on it. Run the current build from source as described below.
 
 ## What the data is, and is not
 
 - **Source:** NASA Open Science Data Repository, **OSD-575**: *SpaceX Inspiration4 Blood Serum Metabolic Panel and Immune/Cardiac Cytokine Arrays*. The file used is the serum **Comprehensive Metabolic Panel (CMP)**, `LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv`.
 - **Scope:** 4 people (the private Inspiration4 crew, a 3-day low-Earth-orbit mission in September 2021). 19 analytes at 7 sparse timepoints: pre-flight L-92, L-44, L-3; post-flight R+1, R+45, R+82, R+194.
 - **It is not:** continuous wearable telemetry, ISS or long-duration data, or a representative astronaut population.
-- **Licence:** none is stated in the OSD-575 record, so redistribution rights are not confirmed. The CSV is therefore **not bundled**. You download it from OSDR yourself, and the app verifies it.
+- **Licence:** none is stated in the OSD-575 record, so redistribution rights are not confirmed. The CSV is therefore **not bundled**, and no derived OSD-575 measurements are tracked in git either — only the provenance manifest (URL, size, SHA-256). You download it from OSDR yourself, and the app verifies it. The one place this repository *does* track derived data is the M6 experiment, built from the openly licensed (ODC-By 1.0) PhysioNet recordings; see [docs/DATA-SOURCE-INVENTORY.md](docs/DATA-SOURCE-INVENTORY.md) §3c for the exact tracked/not-tracked split.
 
 ## Run it
 
@@ -121,13 +137,21 @@ Details: [docs/M6-RESULTS-SUMMARY.md](docs/M6-RESULTS-SUMMARY.md), [docs/M6-TECH
 python -m unittest discover -s tests -v
 ```
 
-The M6 experiment has 27 further tests, which need the `.venv` and the PhysioNet cache:
+The M6 experiment has 28 further tests, which need the `.venv` and the PhysioNet cache (run from the repository root with `src` importable, for example `PYTHONPATH=src` on Linux/macOS):
 
 ```bash
 .venv\Scripts\python -m unittest discover -s experiments/m6/tests -v
 ```
 
-The main suite has 173 tests:
+The main suite has 185 tests. Both counts, and the channel counts quoted below, are computed from the code — regenerate them with:
+
+```bash
+python scripts/report_counts.py
+```
+
+Collected tests are not the same as executed tests: without Tkinter or a dataset cache, whole test classes skip and `unittest` reports a lower "Ran N" figure. Quote the command output when reporting a run.
+
+The main suite covers:
 - **Engine, chart and packaging tests**, using synthetic fixtures that are kept inside the tests.
 - **OSDR tests:** checksum mismatch, schema validation, the fetch logic (using local `file://` URLs, so no network is needed), mission-relative ordering, unit preservation, `NA` handling and pre-flight-only baselines.
 - **An end-to-end check on the real verified file**, through to the UI data model, which compares every z-score with an independent calculation from the raw CSV. These real-file tests **skip with a stated reason** if you haven't run the fetch command.
