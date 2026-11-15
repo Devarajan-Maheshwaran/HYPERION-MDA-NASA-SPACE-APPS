@@ -7,12 +7,14 @@ import math
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from hyperion_mda.engine import (  # noqa: E402
-    DEMO_FLAG_ABS_Z, DEMO_FLAG_LABEL, SUPPORTED_SIGNAL_UNITS, CsvLoadError, read_records,
+    DEMO_FLAG_ABS_Z, DEMO_FLAG_LABEL, SUPPORTED_SIGNAL_UNITS, CsvLoadError, add_baseline_scores,
+    read_records,
 )
 
 HEADER = "timestamp,subject_id,signal,value,unit,context,source,quality,record_type\n"
@@ -126,6 +128,42 @@ class BaselineSeparationTests(CsvTestCase):
         (obs,) = self.observations(records)
         self.assertEqual(obs.value, 91)
         self.assertIsNotNone(obs.z_score)
+
+
+class ScoringRejectionTests(CsvTestCase):
+    """The engine honours an explicit source-assigned reason, never display flags (R1)."""
+
+    def test_display_flag_alone_does_not_block_scoring(self):
+        records, _ = self.load(HEADER + row(value="68") + row(value="72")
+                               + row(value="1000", record_type="observation"))
+        flagged = [replace(r, flags=r.flags + ("Source note (display only)",)) for r in records]
+        obs = self.observations(add_baseline_scores(flagged))[0]
+        self.assertAlmostEqual(obs.z_score, (1000 - 70) / math.sqrt(8))
+
+    def test_explicit_reason_excludes_a_baseline(self):
+        records, _ = self.load(HEADER + row(value="68") + row(value="72") + row(value="999")
+                               + row(value="70", record_type="observation"))
+        marked = [replace(r, rejection_reason="wrong assay type") if r.value == 999 else r
+                  for r in records]
+        scored = add_baseline_scores(marked)
+        self.assertAlmostEqual(self.observations(scored)[0].z_score, 0.0)  # mean 70 from 68 and 72
+        rejected = next(r for r in scored if r.value == 999)
+        self.assertIn("not scored: wrong assay type", rejected.score_note)
+        self.assertEqual(rejected.value, 999)  # kept, not altered or dropped
+
+    def test_explicit_reason_excludes_an_observation(self):
+        records, _ = self.load(HEADER + row(value="68") + row(value="72")
+                               + row(value="70", record_type="observation"))
+        marked = [replace(r, rejection_reason="wrong assay type") if r.record_type == "observation" else r
+                  for r in records]
+        obs = self.observations(add_baseline_scores(marked))[0]
+        self.assertIsNone(obs.z_score)
+        self.assertIn("not scored: wrong assay type", obs.score_note)
+
+    def test_csv_rows_never_carry_a_rejection_reason(self):
+        records, _ = self.load(HEADER + row(value="68") + row(value="72")
+                               + row(value="70", record_type="observation"))
+        self.assertTrue(all(r.rejection_reason == "" and not r.scoring_rejected for r in records))
 
 
 class InsufficientBaselineTests(CsvTestCase):

@@ -18,6 +18,7 @@ import statistics
 import sys
 import tempfile
 import unittest
+from dataclasses import asdict, replace
 from pathlib import Path
 from unittest import mock
 
@@ -27,8 +28,9 @@ if os.environ.get("HYPERION_TEST_INSTALLED") != "1":
 
 from hyperion_mda import osdr_fetch  # noqa: E402
 from hyperion_mda.engine import DEMO_FLAG_LABEL  # noqa: E402
-from hyperion_mda.osdr_cmp import (EXPECTED_COLUMNS, OSDR_CMP_PAIRS, OsdrSchemaError, analyse,  # noqa: E402
-                                   load_osd575_cmp, parse_cmp_rows, parse_timepoint)
+from hyperion_mda.osdr_cmp import (EXPECTED_COLUMNS, OSDR_CMP_PAIRS, WRONG_ASSAY_REJECTION,  # noqa: E402
+                                   OsdrSchemaError, analyse, load_osd575_cmp, parse_cmp_rows,
+                                   parse_timepoint)
 from hyperion_mda.osdr_source import (CACHE_ENV_VAR, ChecksumMismatchError, OsdrSourceError,  # noqa: E402
                                       SourceFileMissingError, default_cache_dir, load_manifest,
                                       verified_cmp_file, verify_file)
@@ -175,6 +177,12 @@ class SchemaTests(TempDirCase):
         records, report = self.load(HEADER + cmp_row(test_type="CBC"))
         self.assertEqual(report.wrong_test_type_lines, [2])
         self.assertTrue(any("expected 'CMP'" in f for f in records[0].flags))
+        self.assertEqual(records[0].rejection_reason, WRONG_ASSAY_REJECTION)
+
+    def test_cmp_rows_carry_no_rejection_reason(self):
+        records, _ = self.load(HEADER + cmp_row())
+        self.assertEqual(records[0].rejection_reason, "")
+        self.assertFalse(records[0].scoring_rejected)
 
     def test_demographics_and_reference_ranges_not_used(self):
         base = {"L-92": "80", "L-44": "84", "L-3": "88", "R+1": "120"}
@@ -289,7 +297,88 @@ class PreflightBaselineTests(TempDirCase):
         self.assertAlmostEqual(self.find(records).z_score, 0.0)
 
 
+# --------------------------------------------------------------------------- wrong assay type (review R1)
+class WrongAssayTypeTests(TempDirCase):
+    """A non-CMP TEST_TYPE is an explicit scoring rejection, not just a display flag.
+
+    All inputs here are SYNTHETIC fixtures. They check software behaviour only.
+    """
+
+    SHARED = {"L-44": "82", "L-3": "84", "R+1": "100", "R+45": "90"}
+
+    def test_wrong_type_baseline_does_not_change_later_mean_sd_or_z(self):
+        clean, _ = self.load(HEADER + series(self.SHARED))
+        mixed, report = self.load(HEADER + cmp_row(value="80", timepoint="L-92", test_type="CBC")
+                                  + series(self.SHARED))
+        self.assertEqual(report.wrong_test_type_lines, [2])
+        for tp in ("R+1", "R+45"):
+            before, after = self.find(clean, timepoint=tp), self.find(mixed, timepoint=tp)
+            self.assertAlmostEqual(after.z_score, before.z_score)
+            self.assertEqual(after.score_note, before.score_note)  # same n, mean and SD
+        obs = self.find(mixed)
+        self.assertAlmostEqual(obs.z_score, (100 - 83) / statistics.stdev([82, 84]))
+        self.assertIn("vs 2 earlier pre-flight baseline readings", obs.score_note)
+        self.assertIn("mean 83", obs.score_note)
+
+    def test_wrong_type_baseline_stays_visible_with_a_reason(self):
+        records, _ = self.load(HEADER + cmp_row(value="80", timepoint="L-92", test_type="CBC")
+                               + series(self.SHARED))
+        self.assertEqual(len(records), 5)  # nothing is dropped
+        rejected = self.find(records, timepoint="L-92")
+        self.assertEqual(rejected.value, 80.0)
+        self.assertEqual(rejected.unit, "mg/dL")
+        self.assertEqual(rejected.rejection_reason, WRONG_ASSAY_REJECTION)
+        self.assertIsNone(rejected.z_score)
+        self.assertIn(f"not scored: {WRONG_ASSAY_REJECTION}", rejected.score_note)
+        self.assertTrue(rejected.source_ref.startswith("line 2 of "))
+        self.assertTrue(any("expected 'CMP'" in f for f in rejected.flags))
+
+    def test_wrong_type_observation_stays_visible_and_unscored(self):
+        text = (HEADER + series({"L-92": "80", "L-44": "82", "L-3": "84"})
+                + cmp_row(value="100", timepoint="R+1", test_type="CBC"))
+        records, report = self.load(text)
+        obs = self.find(records)
+        self.assertEqual(len(records), 4)
+        self.assertEqual(obs.record_type, "observation")
+        self.assertEqual(obs.value, 100.0)
+        self.assertIsNone(obs.z_score)
+        self.assertIn(f"not scored: {WRONG_ASSAY_REJECTION}", obs.score_note)
+        self.assertEqual(report.wrong_test_type_lines, [5])
+        self.assertEqual(report.scored_observations, 0)
+
+    def test_rejected_baselines_do_not_count_toward_the_minimum(self):
+        records, _ = self.load(HEADER + cmp_row(value="80", timepoint="L-92", test_type="CBC")
+                               + series({"L-44": "82", "R+1": "100"}))
+        obs = self.find(records)
+        self.assertIsNone(obs.z_score)
+        self.assertIn("1 eligible pre-flight baseline reading(s)", obs.score_note)
+
+    def test_valid_rows_are_unchanged(self):
+        clean, _ = self.load(HEADER + series(self.SHARED))
+        mixed, _ = self.load(HEADER + cmp_row(value="80", timepoint="L-92", test_type="CBC")
+                             + series(self.SHARED))
+        snapshot = lambda rs: [(r.timestamp, r.value, r.unit, r.z_score, r.score_note, r.flags,
+                                r.rejection_reason) for r in rs if r.timestamp != "L-92"]
+        self.assertEqual(snapshot(clean), snapshot(mixed))
+        self.assertTrue(all(r.rejection_reason == "" for r in clean))
+
+    def test_wrong_type_with_unrecognised_timepoint_keeps_the_assay_reason(self):
+        records, report = self.load(HEADER + cmp_row(value="80", timepoint="Day 3", test_type="CBC")
+                                    + series(self.SHARED))
+        rejected = next(r for r in records if r.timestamp == "Day 3")
+        self.assertIsNone(rejected.z_score)
+        self.assertIn(f"not scored: {WRONG_ASSAY_REJECTION}", rejected.score_note)
+        self.assertEqual(report.wrong_test_type_lines, [2])
+        self.assertEqual(report.invalid_timepoint_lines, [2])
+        self.assertAlmostEqual(self.find(records).z_score, (100 - 83) / statistics.stdev([82, 84]))
+
+
 # --------------------------------------------------------------------------- real file, end to end
+def _result_bytes(records) -> bytes:
+    """Deterministic serialisation of a scored result, for byte-for-byte comparison."""
+    return "\n".join(repr(asdict(r)) for r in records).encode("utf-8")
+
+
 def _real_file_or_skip():
     try:
         return verified_cmp_file()
@@ -355,6 +444,21 @@ class RealOsdrEndToEndTests(unittest.TestCase):
         self.assertFalse(any("Illustrative" in f for r in self.records for f in r.flags))
         self.assertTrue(all(r.record_type == "observation" for r in self.records if r.timestamp.startswith("R+")))
         self.assertTrue(all(r.record_type == "baseline" for r in self.records if r.timestamp.startswith("L-")))
+
+    def test_real_results_byte_identical_with_rejections_disabled(self):
+        """Review R1 must not change a single real OSD-575 result.
+
+        The published file is all CMP, so no row may carry a rejection reason. Scoring
+        it again with every rejection reason cleared reproduces the pre-fix behaviour
+        exactly; the two results must be byte-identical. This also fails if a future
+        change let display flags (the file has 22 NA rows) exclude rows on their own.
+        """
+        self.assertEqual(self.report.wrong_test_type_lines, [])
+        self.assertTrue(all(r.rejection_reason == "" for r in self.records))
+        raw_records, report = parse_cmp_rows(self.verified.path, self.verified.manifest["file_name"])
+        pre_fix = analyse([replace(r, rejection_reason="") for r in raw_records], report)
+        self.assertEqual(_result_bytes(pre_fix), _result_bytes(self.records))
+        self.assertEqual(report.scored_observations, self.report.scored_observations)
 
 
 class RealOsdrGuiTests(unittest.TestCase):
