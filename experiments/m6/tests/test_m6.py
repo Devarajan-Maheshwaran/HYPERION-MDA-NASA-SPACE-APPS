@@ -287,7 +287,29 @@ class RealDataPipelineTests(unittest.TestCase):
         names = sorted(p.name for p in committed.iterdir() if p.is_file())
         self.assertEqual(names, sorted(p.name for p in self.out.iterdir() if p.is_file()))
         for name in names:
-            self.assertEqual((committed / name).read_bytes(), (self.out / name).read_bytes(), name)
+            self.assertEqual(_without_provenance(name, (committed / name).read_bytes()),
+                             _without_provenance(name, (self.out / name).read_bytes()), name)
+
+    def test_provenance_still_recorded(self):
+        prov = json.loads((self.out / "results.json").read_text(encoding="utf-8"))["provenance"]
+        for key in ("git_head", "config_sha256", "dataset_manifest_sha256", "source_sha256", "python"):
+            self.assertIn(key, prov)
+
+
+def _without_provenance(name: str, data: bytes) -> bytes:
+    """Drop only environment provenance, which cannot be byte-stable across commits and machines
+    (git HEAD, platform, Python version, file hashes that depend on checkout line endings).
+    Every metric and every CSV is still compared byte for byte."""
+    if name == "results.json":
+        obj = json.loads(data.decode("utf-8"))
+        obj.pop("provenance")
+        return json.dumps(obj, indent=1, sort_keys=True).encode("utf-8")
+    if name == "report.md":
+        text = data.decode("utf-8")
+        start = text.index("## 1. Reproducibility")
+        end = text.index("\n## ", start)
+        return (text[:start] + text[end:]).encode("utf-8")
+    return data
 
 
 if __name__ == "__main__":

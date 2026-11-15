@@ -411,10 +411,10 @@ def run(out_dir: Path | None = None) -> dict:
     results = clean(results)
     write_outputs(out_dir, T, results, {"primary": table_primary, "S2_rr_screened": table_s2},
                   {"primary_3class": table3, "secondary_4class": table4})
-    (out_dir / "results.json").write_text(json.dumps(results, indent=1) + "\n", encoding="utf-8")
+    (out_dir / "results.json").write_text(json.dumps(results, indent=1) + "\n", encoding="utf-8", newline="\n")
     from m6_report import render
     loaded = json.loads((out_dir / "results.json").read_text(encoding="utf-8"))
-    (out_dir / "report.md").write_text(render(loaded), encoding="utf-8")
+    (out_dir / "report.md").write_text(render(loaded), encoding="utf-8", newline="\n")
     return loaded
 
 

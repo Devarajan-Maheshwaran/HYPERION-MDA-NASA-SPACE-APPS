@@ -6,7 +6,7 @@
   "config_sha256": "da9f28ac718d7324d61fa9f106efcbcf1c63c9d942b57b9f2a0156db3e72b084",
   "config_version": "m6-lopo-1",
   "dataset_manifest_sha256": "327be90a503a74a028d0e4dbfc1ab214a97b73bbca7e733d0e5a0ecfcf1edbc0",
-  "git_head": "150b1f84b173e601b90b2cf7c5fea88c69bb1b64",
+  "git_head": "f1add932f74db699e47b362046c364f31231b88b",
   "git_note": "M6 files are uncommitted; their hashes are listed here",
   "source_sha256": {
    "experiments/m6/m6_data.py": "0e3960a97b37216ffc0741c5625011eba7d48a1d66130a3e616f269b7710e30e",
@@ -14,7 +14,7 @@
    "experiments/m6/m6_metrics.py": "c61ce2c38e7c0801d9f06123d63f4c14f06326638d383cf6a803f0faed96771b",
    "experiments/m6/m6_models.py": "ba6007bd19c950430ea44a3fee552b8f9f0d043ca8351d6f8a5f8d64101c417f",
    "experiments/m6/m6_report.py": "a21080985368cd43b3b7af430d0a2dd77de624b57f749f1e90719ba8353ad011",
-   "experiments/m6/run_m6.py": "3a01bf5e5d6c743332e04845deb79bc7d88aa4b06bcf49c90d264d6ceb877ec7",
+   "experiments/m6/run_m6.py": "f6cec15af22ea08239bcae68d47af7598dd2f207c5d7c0586164730d0d6eb776",
    "experiments/m6/verify_m6.py": "0bcd11326511b032b4b897f9b01d060782aa2b2bc75d94ecb6e90296c3b8b1ca",
    "src/hyperion_mda/dsp_hr.py": "945e9237dec1e569cea77b72f352f56ca216713b647bcff9fcebcef440992ea9",
    "src/hyperion_mda/wfdb_reader.py": "00ec36ef0bfa89df835ec94e2117a8dfd291e6e4ad2a7e690dbc0707620b3b67",
