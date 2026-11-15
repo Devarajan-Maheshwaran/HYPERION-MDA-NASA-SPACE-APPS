@@ -157,7 +157,11 @@ def main() -> int:
         with urllib.request.urlopen(base + "/", timeout=10) as response:
             html = response.read().decode()
         check("SPA index served", "<div id=\"root\">" in html)
-        check("SPA references built assets", "/assets/" in html)
+        # Vite dev serves the TS entrypoint; the production server serves hashed assets.
+        if "/src/main.tsx" in html:
+            check("SPA entrypoint served (vite dev mode)", "@vite/client" in html)
+        else:
+            check("SPA references built assets", "/assets/" in html)
     except Exception as exc:  # noqa: BLE001
         check("SPA index served", False, f"{type(exc).__name__}: {exc}")
 
