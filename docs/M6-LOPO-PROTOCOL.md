@@ -350,7 +350,7 @@ The s4 fold (run only) and the s9 fold (walk only) are single-class, so their pe
 | `src/hyperion_mda/recorded_view.py` | Optional "LOPO methods report" button; read-only display |
 | `tests/test_physionet.py` / `tests/test_demo_lanes.py` | Extend the import-direction and lane-separation audits to the new modules |
 | `.gitignore` | Only if any results path is ever placed inside the repository (the default is outside) |
-| `README.md`, `docs/IMPLEMENTATION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/MODEL-TRAINING-PLAN.md`, `docs/REQUIREMENTS-TRACEABILITY.md` | Describe M6 as implemented and add the measured results only after stage 4 review |
+| `README.md`, `docs/IMPLEMENTATION-STATUS.md`, `docs/ARCHITECTURE.md`, the retired WESAD training plan, `docs/REQUIREMENTS-TRACEABILITY.md` | Describe M6 as implemented and add the measured results only after stage 4 review |
 
 **Not modified:**
 - `pyproject.toml` package-data

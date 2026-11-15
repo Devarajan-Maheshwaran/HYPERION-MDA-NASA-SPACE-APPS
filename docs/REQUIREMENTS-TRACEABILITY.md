@@ -19,8 +19,11 @@ This document compares what the project materials **promise** with what the prot
 
 Abbreviations:
 - **INV** = `docs/DATA-SOURCE-INVENTORY.md`
-- **MTP** = `docs/MODEL-TRAINING-PLAN.md` (historical WESAD plan; the executed LOPO pattern is `docs/M6-LOPO-PROTOCOL.md`)
-- **AC-n** = MVP acceptance criterion *n* (MTP §3)
+- **MTP** = the retired WESAD model-training plan (removed as internal build planning; phase labels below are historical). The executed LOPO protocol is `docs/M6-LOPO-PROTOCOL.md`.
+- **AC-n** = historical MVP acceptance criterion *n*, retained here so the traceability rows remain readable:
+  AC-1 verified NASA lane; AC-2 channel-status panel; AC-3 lane separation; AC-4 dataset terms/checksums;
+  AC-5 participant-separated baselines; AC-6 FL simulation on identical splits; AC-7 DP threat model/accounting;
+  AC-8 claims hygiene.
 
 ## A.1 Slide 1: Title
 
