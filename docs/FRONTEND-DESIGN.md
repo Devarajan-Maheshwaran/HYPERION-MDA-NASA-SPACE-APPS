@@ -1,95 +1,100 @@
-# Frontend design system — HYPERION-MDA workstation
+# Frontend design system — Swiss Clinical Minimalist
 
-The workstation UI is a bespoke, instrument-grade SaaS dashboard. It is deliberately
-**not** a generic admin template: no purple/indigo gradients, neon glows, floating blobs,
-equal-width stat-card rows or thick drop shadows. The reference feel is Linear / Raycast /
-Swiss instrumentation.
+The web workstation is a light-theme clinical product UI, not a sci-fi HUD. It has exactly
+three top-level views behind a persistent 64px sticky header:
+
+1. `01. Overview` — the landing page at `/`, explaining the mission problem in about 15 seconds.
+2. `02. Crew Workstation` — `/workstation`, a 40/60 body-map + safety-gate workspace.
+3. `03. ML Architecture & Docs` — `/docs`, specifications, benchmarks, thresholds and audit ledger.
+
+The backend API is unchanged. The browser still uses relative `/api/...` URLs only.
 
 ## Tokens
 
 | Token | Value | Use |
 |---|---|---|
-| `base` | `#0B0C0E` | app background |
-| `surface` | `#13151A` | panels |
-| `surface-2 / surface-3` | `#181B21 / #1E222A` | elevated inputs, hover |
-| `hairline` | `rgba(255,255,255,0.07)` | all 1px borders |
-| `accent` | `#F59E0B` (Signal Amber) | primary actions and active states only |
-| `ink / secondary / muted / faint` | `#E7E9EC / #9CA3AC / #6B7280 / #4B5158` | text hierarchy |
-| `state.ok / watch / alert / unknown / info` | `#3FB950 / #DB6D28 / #F85149 / #6E7681 / #58A6FF` | semantic status, distinct from the accent |
+| page | `#F8FAFC` | app background |
+| card | `#FFFFFF` | panels, `1px solid #E2E8F0`, shadow `0 1px 3px rgba(15,23,42,0.04)` |
+| ink | `#0F172A` | headings |
+| ink-body | `#475569` | body copy |
+| ink-label | `#94A3B8` | uppercase micro labels |
+| primary | `#0F172A` / `#1E293B` | primary actions |
+| primary-blue | `#2563EB` | links / focus only |
+| nominal | `#10B981`, bg `#ECFDF5`, text `#065F46` | semantic nominal state |
+| watch | `#F59E0B`, bg `#FFFBEB`, text `#92400E` | semantic watch / simulated fallback |
+| critical | `#EF4444`, bg `#FEF2F2`, text `#991B1B` | semantic alert state |
+| neutral | `#94A3B8`, bg `#F1F5F9`, text `#475569` | unknown / not available |
 
-Typography: **Plus Jakarta Sans** for UI/headings, **JetBrains Mono** with
-`font-variant-numeric: tabular-nums` for every number, timestamp, status badge and table
-cell (`.tnum`). Both fonts are self-hosted via `@fontsource`, Latin subset only — no CDN.
-No Inter / Roboto / Arial / Open Sans.
+Typography: **Inter** for UI/headings/body; **JetBrains Mono** only for numbers, units,
+formulas and SHA-256 hashes (`.num`, tabular numerals). Both are self-hosted via
+`@fontsource`, Latin subset only. No CDN fonts. The palette is roughly 90% monochrome;
+colour is reserved for semantic clinical states and primary actions.
 
 ## Layout
 
-- **Rail:** 220px expanded, 64px collapsed, animated width. Workspace block, active pill
-  (`layoutId`), `G D` / `G C` / `G H` / `G A` / `G O` / `G R` chord indicators, active
-  subject readout. Collapse state persists in `localStorage`. Hidden below `md`; a compact
-  mobile nav replaces it.
-- **Command topbar:** 52px. Breadcrumb, ⌘K trigger, date-range `Segmented`
-  (`30s / 2m / 5m / All`), habitat + demo-role selectors, live/offline dot, one primary CTA.
-- **Overview bento:** asymmetric grid, telemetry canvas ≈65% and live activity feed ≈35%
-  on `xl`, stacking cleanly on tablet/mobile. Metrics live inline in the chart header, not
-  in floating boxes. Full-width gate-verdict table below with sticky headers, row-hover
-  quick actions and a row-click slide-over drawer.
-- **Honesty strip + footer:** lane provenance is always visible; the footer carries
-  “Demo thresholds, not clinically validated. Not a medical device.”
+- **Header:** 64px sticky. Left: `HYPERION-MDA` + `NASA Space Apps · Crew Health` pill.
+  Center: segmented `01 / 02 / 03` navigation. Right: provenance pill with a Radix popover
+  that lists OSD-575 / GOES / WESAD availability and switches real vs simulated mode.
+- **Overview:** eyebrow, 36px headline, 680px subtitle, two CTAs, three problem→solution
+  cards, and a clickable four-step architecture strip with two-sentence summaries.
+- **Crew Workstation:** habitat pills + five scenario buttons + explicit amber simulation
+  banner. Left 40%: medical-illustration SVG body map with six selectable nodes and an
+  organ detail card. Right 60%: Tab A (gate pipeline, one chart, triage) and Tab B
+  (readiness bar + PVT / ultrasound / vitals tools).
+- **Docs:** four spec cards, requested benchmark table with explicit provenance, measured
+  M6 rows, six-organ demo threshold table, five official NASA/CSA links, and the local
+  SHA-256 audit ledger. No chart is rendered on this page.
 
 ## Components
 
-Radix UI supplies the accessible behaviour; Motion supplies only the visual transition.
-
-- `DialogShell` (Radix Dialog) backs `Dialog`, `Drawer` and the command palette: focus
-  trap, focus restore, Escape, outside-click, `aria-hidden` on the rest of the app.
-- `Tabs` (Radix Tabs) gives roving focus + arrow keys and a Motion shared underline.
-- `CommandPalette` uses `cmdk` for fuzzy command/scenario/subject/role search.
-- `Button` is a `motion.button` with `scale(0.98)` press state and `type="button"` by
-  default so it never submits a form accidentally.
-- `Segmented`, `Badge`, `StatusDot`, `Table/Th/Td`, `InlineMetric`, `Skeleton`,
-  `AlertBanner`, `EmptyState` are bespoke hairline primitives. Semantic tone is exposed as
-  `data-tone` so tests assert meaning, not colour classes.
-- Icons: `lucide-react` at stroke width **1.75**.
-- Charts: Recharts with hairline gridlines, a custom crosshair tooltip and
-  `accessibilityLayer` for keyboard traversal.
+- Bespoke `Card`, `Button`, `Badge`, `StatusDot`, `Gauge`, `Tabs`, `MetricTile`,
+  `ErrorNotice`, `EmptyState` and `PageSkeleton` primitives in `components/ui.tsx`.
+- Radix Popover supplies accessible provenance-popover behaviour. Motion supplies only
+  the view transition; `MotionConfig reducedMotion="user"` remains enabled.
+- Icons: `lucide-react`, thin clinical stroke.
+- Charts: exactly one Recharts `ComposedChart` on screen at a time (Tab A only): raw HR
+  slate line, residual emerald line, shaded demo residual band, four context metric pills.
+  The chart is mounted only after its container has a measured width, avoiding zero-size
+  console warnings.
 
 ## Motion
 
-One physics contract in `lib/motion.ts`: springs `stiffness: 400, damping: 32`, crisp ease
-`cubic-bezier(0.16, 1, 0.3, 1)`, 40ms staggered mount with 6px translate + fade,
-`layoutId` shared indicators, smooth accordion height, dimension-matched skeleton shimmer.
-`MotionConfig reducedMotion="user"` plus a CSS `prefers-reduced-motion` block disable
-animation for users who ask for it. Nothing bouncy or sluggish.
+- View transitions: opacity + `translateY(6px)`, 280ms, `cubic-bezier(0.16,1,0.3,1)`.
+- Selected organ: SVG pulse ring.
+- Gate steps: sequential 450ms pulse on scenario change / crew check (`revision` key).
+- Freshness / readiness bars: `width 500ms ease`.
+- `prefers-reduced-motion` collapses animations and transitions.
 
 ## Data honesty preserved
 
-- Unknown / stale / failed / unavailable never render green and never become `0`; they
-  render as text (`Not available`, `—`, `UNKNOWN`).
-- Lane badge and provenance explanation are persistent.
-- Non-rate findings are never suppressed; the UI states this explicitly.
-- Action text is restricted to the four non-treatment strings.
-- Roles are a demo-grade switcher, not authentication; the UI says so.
+- Unknown / stale / missing never render green and never become `0`; they render `—`,
+  `UNKNOWN` or `NOT_AVAILABLE`.
+- Simulated fallback is unmistakably labelled in the header pill and amber workstation banner.
+- Real mode never invents telemetry; without a live wearable it shows `NOT_AVAILABLE`.
+- Gate 2 uses per-person normalized activity, not raw ENMO grams; the UI says so.
+- Demo thresholds are labelled as demo rules, not NASA-STD-3001 compliance.
+- Unimplemented ML/DP benchmarks show `NOT_IMPLEMENTED` / dashes, never invented metrics.
+- The audit ledger is a local SHA-256 hash chain: no EVM transaction, no deployed contract,
+  no raw measurements.
 
-## Dependencies & security
+## Dependencies
 
 React 18.3, React Router 7.18, Vite 7.3, Vitest 4.1, Tailwind 3.4, Recharts 2.15,
-Motion 14, Radix Dialog/Tabs, cmdk, Lucide. `npm ci` is reproducible and `npm audit`
-reported **0 vulnerabilities** at the time of the redesign. Recharts 2.x is pinned
-deliberately (3.x is a breaking migration); npm’s deprecation notice is expected.
+Motion 14, Radix Popover, Lucide, clsx + tailwind-merge, `@fontsource/inter` and
+`@fontsource/jetbrains-mono`. The old rail / command palette / dialog / tabs / cmdk
+dependencies were removed. `npm ci` is reproducible; `npm audit` reported 0 vulnerabilities.
 
 ## Verification
 
 | Check | Result |
 |---|---|
 | `tsc --noEmit` | exit 0 |
-| `vitest run` | 34 passed (5 files) |
-| `vite build` | OK, 4 JS/CSS chunks + self-hosted fonts |
-| `tests_api` | 57 OK |
-| `tests/` (core, unchanged) | 170 OK, 30 skipped |
-| smoke on :5173 and :8000 | 26/26 each |
-| `npm audit` | 0 vulnerabilities |
+| `vitest run` | 27 passed (8 files), including zero-console-error assertions |
+| `vite build` | OK, code-split JS/CSS + self-hosted fonts |
+| `tests_api` | 70 passed |
+| full Python suite | 234 passed / 49 skipped / 128 subtests |
+| M6 verifier | 1187 checks passed |
+| HTTP smoke | 42/42 against the running single-port server |
 
-No browser binary was available, so this was verified with jsdom component renders,
-strict typecheck, production build and HTTP smoke checks — **not** a real-browser
-screenshot or Playwright run.
+No browser binary was available, so interaction coverage uses jsdom + React Testing
+Library and HTTP smoke checks — not a real-browser screenshot or Playwright run.

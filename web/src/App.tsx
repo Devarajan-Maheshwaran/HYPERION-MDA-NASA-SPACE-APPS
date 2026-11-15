@@ -1,57 +1,73 @@
-import * as React from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { SessionProvider, useSession } from './hooks/useSession';
-import { AppShell } from './components/AppShell';
-import { Overview } from './views/Overview';
-import { CrewConsole } from './views/CrewConsole';
-import { CrewChecks } from './views/CrewChecks';
-import { SurgeonQueue } from './views/SurgeonQueue';
-import { OpsConsole } from './views/OpsConsole';
-import { ResearchView } from './views/ResearchView';
-import { WorkstationView } from './views/WorkstationView';
-import { EmptyState } from './components/ui';
-import type { Role } from './lib/types';
-
-const HOME: Record<Role, string> = {
-  crew: '/workstation',
-  'flight-surgeon': '/workstation',
-  ops: '/workstation',
-  researcher: '/workstation',
-};
-
-function RoleGate({ allow, children }: { allow: Role[]; children: React.ReactNode }) {
-  const { role } = useSession();
-  if (!allow.includes(role)) {
-    return (
-      <EmptyState title="Not available for this role"
-        detail={`This view needs one of: ${allow.join(', ')}. Use the role selector in the header. Roles here are a demo-grade switcher, not authentication.`} />
-    );
-  }
-  return <>{children}</>;
-}
-
-function Home() {
-  const { role, loading } = useSession();
-  if (loading) return <EmptyState title="Loading session" detail="Contacting the API…" />;
-  return <Navigate to={HOME[role]} replace />;
-}
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { Header } from './components/Header';
+import { ErrorNotice, PageSkeleton } from './components/ui';
+import { OverviewPage } from './pages/OverviewPage';
+import { WorkstationPage } from './pages/WorkstationPage';
+import { DocsPage } from './pages/DocsPage';
+import { WorkstationProvider, useWorkstation } from './state/WorkstationProvider';
+import { DISCLAIMER } from './lib/types';
 
 export function App() {
   return (
-    <SessionProvider>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/workstation" element={<WorkstationView />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/crew" element={<RoleGate allow={['crew', 'flight-surgeon', 'ops']}><CrewConsole /></RoleGate>} />
-          <Route path="/crew/checks" element={<RoleGate allow={['crew', 'flight-surgeon']}><CrewChecks /></RoleGate>} />
-          <Route path="/surgeon" element={<RoleGate allow={['flight-surgeon', 'ops']}><SurgeonQueue /></RoleGate>} />
-          <Route path="/ops" element={<RoleGate allow={['ops', 'flight-surgeon', 'crew']}><OpsConsole /></RoleGate>} />
-          <Route path="/research" element={<ResearchView />} />
-          <Route path="*" element={<EmptyState title="Page not found" detail="Use the navigation rail or press ⌘K." />} />
-        </Routes>
-      </AppShell>
-    </SessionProvider>
+    <WorkstationProvider>
+      <Shell />
+    </WorkstationProvider>
+  );
+}
+
+function Shell() {
+  const location = useLocation();
+  const { loading, state, error, reload } = useWorkstation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-page">
+      <Header />
+      <main className="flex-1">
+        {error ? (
+          <div className="mx-auto max-w-content px-4 pt-4 sm:px-6">
+            <ErrorNotice title="Workstation API unavailable" onRetry={() => void reload()}>{error}</ErrorNotice>
+          </div>
+        ) : null}
+        {loading ? <PageSkeleton /> : (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Routes location={location}>
+                <Route path="/" element={<OverviewPage />} />
+                <Route path="/workstation" element={state ? <WorkstationPage /> : <Unavailable />} />
+                <Route path="/docs" element={<DocsPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </main>
+      <footer className="border-t border-line bg-white">
+        <div className="mx-auto flex max-w-content flex-col gap-2 px-4 py-4 text-2xs text-ink-label sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <span>HYPERION-MDA · NASA Space Apps research prototype</span>
+          <span>{DISCLAIMER}</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Unavailable() {
+  return (
+    <div className="mx-auto max-w-content px-6 py-16 text-center">
+      <h1 className="text-2xl">Workstation state unavailable</h1>
+      <p className="mt-2 text-sm text-ink-body">The API did not return a state snapshot. Use Retry above once the backend is running.</p>
+    </div>
   );
 }

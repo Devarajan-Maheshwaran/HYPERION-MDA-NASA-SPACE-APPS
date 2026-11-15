@@ -1,140 +1,98 @@
-import type { KeyboardEvent } from 'react';
 import type { OrganReading } from '../lib/types';
-import { organTone, toneClass } from '../lib/status';
+import { organTone } from '../lib/clinical';
 import { cn } from '../lib/utils';
-import { Badge } from './ui';
 
-// Positions on a neutral 200x420 outline. Display only: no risk model, no scores.
-const POSITION: Record<string, { x: number; y: number }> = {
-  'head-eyes': { x: 100, y: 42 },
-  brain: { x: 132, y: 26 },
-  'chest-immune': { x: 100, y: 122 },
-  heart: { x: 82, y: 138 },
-  metabolic: { x: 100, y: 186 },
-  bones: { x: 100, y: 280 },
+const NODES: Record<string, { x: number; y: number }> = {
+  'head-eyes': { x: 180, y: 54 },
+  heart: { x: 193, y: 142 },
+  'chest-immune': { x: 166, y: 160 },
+  metabolic: { x: 180, y: 218 },
+  bones: { x: 151, y: 302 },
+  brain: { x: 180, y: 34 },
 };
 
-const FILL: Record<string, string> = {
-  nominal: '#3FB950',
-  watch: '#DB6D28',
-  alert: '#F85149',
-  unknown: '#6E7681',
-  info: '#58A6FF',
-};
+const COLORS = { nominal: '#10B981', watch: '#F59E0B', critical: '#EF4444', neutral: '#94A3B8' } as const;
 
-export function BodyMap({
-  organs, selected, onSelect,
-}: {
-  organs: OrganReading[];
-  selected: string | null;
-  onSelect: (system: string) => void;
+export function BodyMap({ organs, selected, onSelect }: {
+  organs: OrganReading[]; selected: string; onSelect: (system: string) => void;
 }) {
-  const onKey = (event: KeyboardEvent<SVGGElement>, system: string) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onSelect(system);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      <svg viewBox="0 0 200 420" className="h-[300px] w-[150px] shrink-0" role="group"
-        aria-label="Clickable body map showing demo organ status">
-        <g fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5">
-          <circle cx="100" cy="42" r="26" />
-          <path d="M100 68 L100 200" />
-          <path d="M64 96 L136 96" />
-          <path d="M64 96 L52 178" />
-          <path d="M136 96 L148 178" />
-          <path d="M72 100 L72 200 L128 200 L128 100 Z" />
-          <path d="M84 200 L78 330 L70 396" />
-          <path d="M116 200 L122 330 L130 396" />
+    <div className="relative mx-auto w-full max-w-[360px]" aria-label="Six organ systems">
+      <svg viewBox="0 0 360 420" className="w-full" role="img" aria-label="Medical illustration of the human body with six selectable organ systems">
+        <defs>
+          <linearGradient id="body-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#F8FAFC" />
+          </linearGradient>
+        </defs>
+        {/* Front-facing anatomical outline, deliberately monochrome. */}
+        <g fill="url(#body-fill)" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round">
+          <ellipse cx="180" cy="48" rx="27" ry="33" />
+          <path d="M168 79 L168 96 C150 101 137 108 132 121 L120 176 L113 236 C112 244 116 250 122 250 C128 250 132 245 133 238 L141 187 L148 158 L146 226 C145 244 148 258 153 270 L150 338 L146 390 C145 399 150 405 158 405 C166 405 171 400 172 392 L180 330 L188 392 C189 400 194 405 202 405 C210 405 215 399 214 390 L210 338 L207 270 C212 258 215 244 214 226 L212 158 L219 187 L227 238 C228 245 232 250 238 250 C244 250 248 244 247 236 L240 176 L228 121 C223 108 210 101 192 96 L192 79" />
+        </g>
+        {/* Minimal internal landmarks. */}
+        <g fill="none" stroke="#E2E8F0" strokeWidth="1.2">
+          <path d="M158 128 C165 122 174 122 180 128 C186 122 195 122 202 128" />
+          <path d="M155 138 C160 132 172 132 178 140 M182 140 C188 132 200 132 205 138" />
+          <path d="M180 128 L180 248" strokeDasharray="3 4" />
+          <path d="M158 205 C166 198 194 198 202 205 C206 216 198 232 180 234 C162 232 154 216 158 205Z" />
+          <path d="M160 262 C170 268 190 268 200 262" />
+          <path d="M163 285 L160 330 M197 285 L200 330" />
+          <circle cx="171" cy="47" r="3" /><circle cx="189" cy="47" r="3" />
+          <path d="M172 62 C177 65 183 65 188 62" />
         </g>
         {organs.map((organ) => {
-          const pos = POSITION[organ.system];
-          if (!pos) return null;
-          const tone = organTone(organ.status);
-          const isSelected = selected === organ.system;
+          const node = NODES[organ.system];
+          if (!node) return null;
+          const active = selected === organ.system;
+          const color = COLORS[organTone(organ.status)];
           return (
-            <g key={organ.system} role="button" tabIndex={0} aria-pressed={isSelected}
+            <g
+              key={organ.system}
+              role="button"
+              tabIndex={0}
               aria-label={`${organ.label}: ${organ.status}`}
-              className="cursor-pointer focus-visible:outline-none"
-              onClick={() => onSelect(organ.system)} onKeyDown={(event) => onKey(event, organ.system)}>
-              <circle cx={pos.x} cy={pos.y} r={isSelected ? 14 : 11}
-                fill={FILL[tone]} fillOpacity={isSelected ? 0.85 : 0.45}
-                stroke={isSelected ? '#F59E0B' : FILL[tone]} strokeWidth={isSelected ? 2 : 1.25} />
-              <title>{`${organ.label}: ${organ.status}`}</title>
+              aria-pressed={active}
+              className="cursor-pointer outline-none"
+              onClick={() => onSelect(organ.system)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelect(organ.system);
+                }
+              }}
+            >
+              <title>{organ.label} · {organ.status}</title>
+              {active ? (
+                <circle cx={node.x} cy={node.y} r="10" fill="none" stroke={color} strokeWidth="1.5" className="animate-pulse-ring" style={{ transformOrigin: `${node.x}px ${node.y}px` }} />
+              ) : null}
+              <circle cx={node.x} cy={node.y} r={active ? 8 : 6.5} fill="#FFFFFF" stroke={color} strokeWidth={active ? 2 : 1.5} />
+              <circle cx={node.x} cy={node.y} r={active ? 3.5 : 2.5} fill={color} />
+              <circle cx={node.x} cy={node.y} r="16" fill="transparent" />
             </g>
           );
         })}
       </svg>
-
-      <div className="grid flex-1 content-start gap-1.5">
+      <div className="mt-1 grid grid-cols-2 gap-1.5">
         {organs.map((organ) => {
-          const tone = organTone(organ.status);
+          const active = selected === organ.system;
           return (
-            <button key={organ.system} type="button" onClick={() => onSelect(organ.system)}
-              aria-pressed={selected === organ.system}
+            <button
+              key={organ.system}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onSelect(organ.system)}
               className={cn(
-                'flex items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors duration-150',
-                selected === organ.system
-                  ? 'border-accent/40 bg-accent-dim'
-                  : 'border-hairline bg-base hover:bg-white/[0.03]',
-              )}>
-              <div className="min-w-0">
-                <div className="truncate text-xs font-semibold text-ink">{organ.label}</div>
-                <div className="truncate text-[10px] text-ink-faint">{organ.indicator}</div>
-              </div>
-              <span data-tone={tone} className={cn(
-                'tnum shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em]',
-                toneClass(tone),
-              )}>
-                {organ.status === 'NOT_AVAILABLE' ? 'N/A' : organ.status}
-              </span>
+                'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-2xs font-medium transition-colors',
+                active ? 'border-line-strong bg-page text-ink' : 'border-transparent text-ink-subtle hover:bg-page',
+              )}
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[organTone(organ.status)] }} aria-hidden />
+              {organ.label}
             </button>
           );
         })}
-        <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
-          Grey means unknown or not available — never healthy. Status comes from a demo rule table
-          applied to crew-entered checks, not from a validated clinical model.
-        </p>
       </div>
-    </div>
-  );
-}
-
-export function OrganDetail({ organ }: { organ: OrganReading | null }) {
-  if (!organ) {
-    return <p className="text-xs text-ink-faint">Select a system on the body map to see its evidence.</p>;
-  }
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold text-ink">{organ.label}</h4>
-        <Badge tone={organTone(organ.status)}>{organ.status}</Badge>
-      </div>
-      <dl className="grid gap-1.5 text-xs">
-        <Row label="Indicator" value={organ.indicator} />
-        <Row label="Spaceflight hazard" value={organ.hazard} />
-        <Row label="Demo threshold" value={organ.demo_threshold} />
-        <Row label="Staleness τ" value={organ.staleness_tau === null ? 'Not available' : organ.staleness_tau.toFixed(2)} />
-        <Row label="Age" value={organ.age_hours === null ? 'Not available' : `${organ.age_hours.toFixed(1)} h`} />
-        <Row label="Evidence" value={organ.evidence} />
-      </dl>
-      <div className="rounded-md border border-hairline bg-base px-3 py-2">
-        <div className="microlabel">Guided action</div>
-        <div className="mt-0.5 text-sm font-medium text-ink">{organ.action}</div>
-      </div>
-      <p className="text-[10px] text-ink-faint">{organ.threshold_label}</p>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex gap-2 border-b border-hairline/50 pb-1">
-      <dt className="w-28 shrink-0 text-ink-faint">{label}</dt>
-      <dd className="tnum flex-1 text-ink-secondary">{value}</dd>
     </div>
   );
 }

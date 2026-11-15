@@ -1,15 +1,14 @@
 # HYPERION-MDA — OSD-575 real-data candidate
 
 > **New: the web workstation (API + React frontend).** A FastAPI composition layer and a
-> React 18 / TypeScript-strict / Vite / Tailwind / Recharts console implement the crew-health
-> workstation from the concept deck: live streaming vitals, the deterministic three-stage
-> trust gate, a six-system body map, crew checks with a live reaction test, a surgeon alert
-> queue and a tamper-evident audit chain.
+> React 18 / TypeScript-strict / Vite / Tailwind / Recharts frontend implement the crew-health
+> workstation as a clean, light-theme clinical product with exactly three views: Overview,
+> Crew Workstation, and ML Architecture & Docs. The backend API and its tests are unchanged.
 > **Run it (one command):** `bash run_workstation.sh` → http://localhost:8000 ·
 > [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
-> **Live workstation:** dual-mode data engine, five labelled scenarios, 3-column avionics
-> layout, PVT / ultrasound caliper / vitals exams, ML benchmark honesty panel and local
-> SHA-256 audit chain (`HealthAudit.sol` reference only, not deployed).
+> **Live workstation:** dual-mode data engine, five labelled scenarios, 40/60 body-map +
+> safety-gate layout, PVT / ultrasound caliper / vitals exams, ML benchmark honesty panel and
+> local SHA-256 audit chain (`HealthAudit.sol` reference only, not deployed).
 > **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md) ·
 > **Frontend design system:** [docs/FRONTEND-DESIGN.md](docs/FRONTEND-DESIGN.md).
 > **Safety deviations from the deck:** [docs/SAFETY_ISSUES.md](docs/SAFETY_ISSUES.md) — read this
