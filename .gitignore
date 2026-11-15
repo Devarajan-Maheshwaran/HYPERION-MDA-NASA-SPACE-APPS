@@ -12,6 +12,21 @@ web/dist/
 .vite/
 *.local
 
+# Local tooling caches and editor/OS scratch (never source or demo evidence).
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+.idea/
+.vscode/
+
 # Runtime state: the durable SQLite case store and its WAL sidecars are local, not source.
 var/
 *.db
