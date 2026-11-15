@@ -14,6 +14,7 @@ import argparse
 import json
 import sys
 import urllib.error
+import time
 import urllib.request
 
 PASS, FAIL = [], []
@@ -216,6 +217,96 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         check("SPA index served", False, f"{type(exc).__name__}: {exc}")
 
+    # ---- live cockpit: clock, lifecycle, comms, reset, benchmark (P0/P1) ----
+    # The section above left the case in REAL_EMPIRICAL mode; reset back to a live case.
+    call(base, "/api/case/reset", method="POST", payload={})
+    status, boot = call(base, "/api/state")
+    check("cockpit boots into a labelled live case",
+          status == 200 and boot.get("scenario_key") == "nominal-orbital"
+          and boot.get("frame") is not None)
+    clock = boot.get("clock", {})
+    check("clock advertises 1 Hz and the mission tau basis",
+          clock.get("hz") == 1.0 and clock.get("mission_seconds_per_demo_hour") == 60.0
+          and "mission" in str(clock.get("tau_basis", "")).lower())
+    check("lifecycle banner is present and demo-labelled",
+          boot.get("lifecycle", {}).get("stage") == "S0_NOMINAL"
+          and "demo" in boot["lifecycle"]["routing_label"].lower())
+
+    call(base, "/api/transport", method="POST", payload={"action": "pause"})
+    _, paused = call(base, "/api/state")
+    status, stepped = call(base, "/api/transport", method="POST",
+                           payload={"action": "step", "dt_s": 10})
+    check("transport step advances mission time by exactly 10 s",
+          status == 200 and abs(stepped["t_s"] - paused["t_s"] - 10.0) < 1e-6)
+
+    stages = {}
+    for scenario_id in ("nominal-orbital", "eva-ared-exercise", "sans-stale-eye",
+                        "spe-radiation", "glycemic-circadian"):
+        _, sc = call(base, "/api/scenario", method="POST", payload={"scenario_id": scenario_id})
+        stages[scenario_id] = sc.get("lifecycle", {}).get("stage")
+    check("five demo lanes land on S0/S1/S2/S4/S3",
+          stages == {"nominal-orbital": "S0_NOMINAL", "eva-ared-exercise": "S1_EXERTION_COMPENSATED",
+                     "sans-stale-eye": "S2_ACTIVE_SENSING_HOLD", "spe-radiation": "S4_SURGEON_ESCALATED",
+                     "glycemic-circadian": "S3_CREW_COUNTERMEASURE"}, str(stages))
+
+    call(base, "/api/scenario", method="POST", payload={"scenario_id": "sans-stale-eye"})
+    _, resolved = call(base, "/api/exams/ultrasound", method="POST", role="crew", payload={"sample": "nominal"})
+    check("normal ONSD resolves the S2 hold",
+          resolved["lifecycle"]["stage"] == "S3_CREW_COUNTERMEASURE"
+          and not resolved["lifecycle"]["action_required"])
+    call(base, "/api/scenario", method="POST", payload={"scenario_id": "sans-stale-eye"})
+    _, escalated = call(base, "/api/exams/ultrasound", method="POST", role="crew", payload={"sample": "sans"})
+    check("elevated ONSD escalates to S4 and queues one SBAR packet",
+          escalated["lifecycle"]["stage"] == "S4_SURGEON_ESCALATED"
+          and len(escalated["comms"]["packets"]) == 1)
+
+    packet_id = escalated["comms"]["packets"][0]["packet_id"]
+    status, _ = call(base, "/api/surgeon/acknowledge", method="POST", role="crew",
+                     payload={"packet_id": packet_id, "directive": "x"})
+    check("crew cannot acknowledge a surgeon packet", status == 403)
+    call(base, "/api/scenario", method="POST", payload={"habitat": "station"})
+    call(base, "/api/transport", method="POST", payload={"action": "step", "dt_s": 1})
+    time.sleep(0.4)
+    call(base, "/api/transport", method="POST", payload={"action": "step", "dt_s": 1})
+    status, acked = call(base, "/api/surgeon/acknowledge", method="POST", role="flight-surgeon",
+                         payload={"packet_id": packet_id, "directive": "Recheck ONSD in 30 minutes."})
+    check("flight surgeon acknowledgement closes the loop",
+          status == 200 and acked["lifecycle"]["stage"] == "S4_SURGEON_ACKNOWLEDGED"
+          and len(acked["receipt"]["sha256"]) == 64)
+
+    _, before_reset = call(base, "/api/state")
+    status, reset = call(base, "/api/case/reset", method="POST", payload={})
+    check("case reset returns to S0 and preserves the audit chain",
+          status == 200 and reset["lifecycle"]["stage"] == "S0_NOMINAL"
+          and not reset["comms"]["packets"] and reset["audit"]["verification"]["ok"]
+          and reset["audit"]["verification"]["entries"] >= before_reset["audit"]["verification"]["entries"])
+
+    _, replayed = call(base, "/api/scenario", method="POST", payload={"replay_participant": "s1"})
+    check("recorded replay is labelled non-astronaut",
+          replayed["telemetry_mode"] == "RECORDED_REPLAY"
+          and "NON-ASTRONAUT" in replayed["provenance_banner"]
+          and replayed["replay"]["n_windows"] == 3332)
+
+    goes_lane = replayed["sources"]["goes"]
+    check("GOES lane is pfu with a not-dose note",
+          goes_lane.get("unit") == "pfu" and "not absorbed tissue dose" in goes_lane.get("dose_note", "").lower())
+
+    status, bench = call(base, "/api/benchmark/fl-dp")
+    artifact = bench.get("benchmark", {})
+    check("FL/DP benchmark served from the committed artifact",
+          status == 200 and artifact.get("available") and len(artifact.get("sha256", "")) == 64)
+    if artifact.get("available"):
+        results = artifact["results"]
+        regimes = {row["regime"] for row in results["accuracy"]["table"]}
+        check("benchmark measures all four regimes plus the mean baseline",
+              regimes == {"mean_baseline", "local_only", "centralized", "fedavg", "dp_sgd_fl"})
+        check("benchmark declares a window-level (not participant-level) threat model",
+              results["threat_model"]["level"] == "WINDOW"
+              and any("PARTICIPANT-LEVEL" in item for item in results["threat_model"]["not_covered"]))
+        check("benchmark cross-check reproduces the frozen M6 A0",
+              results["accuracy"]["frozen_m6_cross_check"]["matches"] is True)
+
+    call(base, "/api/case/reset", method="POST", payload={})
     call(base, "/api/stream/stop", method="POST")
 
     print(f"\n=== {len(PASS)} passed, {len(FAIL)} failed ===")

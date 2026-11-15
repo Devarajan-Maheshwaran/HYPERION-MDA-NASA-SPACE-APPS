@@ -9,8 +9,12 @@ import { VitalsTool } from './VitalsTool';
 
 export type CrewTool = 'pvt' | 'ultrasound' | 'vitals';
 
-export function CrewChecks({ state, activeTool, onSelectTool, onSaved }: {
-  state: WorkstationState; activeTool: CrewTool; onSelectTool: (tool: CrewTool) => void; onSaved: () => void;
+export function CrewChecks({ state, activeTool, onSelectTool, onSaved, renderPanel = true }: {
+  state: WorkstationState; activeTool: CrewTool; onSelectTool: (tool: CrewTool) => void;
+  onSaved: () => void;
+  /** False when the always-visible InstrumentBay already renders the active tool, so the
+   *  cockpit never mounts two copies of the same instrument. */
+  renderPanel?: boolean;
 }) {
   const freshness = freshnessPercent(state.readiness.freshness_tau_avg);
   const freshCount = state.organs.filter((organ) => organ.staleness_tau !== null && organ.staleness_tau >= 0.5).length;
@@ -65,11 +69,18 @@ export function CrewChecks({ state, activeTool, onSelectTool, onSaved }: {
         ))}
       </div>
 
-      <div role="tabpanel">
-        {activeTool === 'pvt' ? <PVTTool onSaved={onSaved} /> : null}
-        {activeTool === 'ultrasound' ? <UltrasoundTool onSaved={onSaved} /> : null}
-        {activeTool === 'vitals' ? <VitalsTool onSaved={onSaved} /> : null}
-      </div>
+      {renderPanel ? (
+        <div role="tabpanel">
+          {activeTool === 'pvt' ? <PVTTool onSaved={onSaved} /> : null}
+          {activeTool === 'ultrasound' ? <UltrasoundTool onSaved={onSaved} /> : null}
+          {activeTool === 'vitals' ? <VitalsTool onSaved={onSaved} /> : null}
+        </div>
+      ) : (
+        <p className="rounded-lg border border-line bg-page px-3 py-2.5 text-2xs leading-4 text-ink-subtle">
+          The selected instrument is open in the always-visible bay on the right. Saving there
+          returns this panel to the safety gate.
+        </p>
+      )}
       <p className="px-1 text-2xs leading-4 text-ink-label">
         Current mean τ̄ = <span className="num">{num(state.readiness.freshness_tau_avg, 3)}</span>. Only submitted indicators are refreshed; this prototype does not claim that every organ becomes 100% fresh after one tool.
       </p>

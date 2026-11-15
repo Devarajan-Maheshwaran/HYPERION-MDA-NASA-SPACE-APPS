@@ -1,5 +1,6 @@
 import { ExternalLink, ShieldCheck } from 'lucide-react';
 import { Badge, Card, CardHeader } from '../components/ui';
+import { FlDpBenchmarkPanel } from '../components/FlDpBenchmarkPanel';
 import { useWorkstation } from '../state/WorkstationProvider';
 import { num } from '../lib/format';
 
@@ -21,10 +22,10 @@ const THRESHOLDS = [
 ];
 
 const BENCHMARKS = [
-  { model: 'Local-Only', status: 'NOT_IMPLEMENTED' },
-  { model: 'Centralized', status: 'NOT_IMPLEMENTED' },
-  { model: 'Federated + Cosine-Median', status: 'SIMULATED_TOY_FEDAVG' },
-  { model: 'Federated + DP-SGD', status: 'NOT_IMPLEMENTED' },
+  { model: 'Local-Only', status: 'MEASURED (HR MAE)' },
+  { model: 'Centralized', status: 'MEASURED (HR MAE)' },
+  { model: 'Federated + Cosine-Median', status: 'MEASURED + SIMULATED_TOY_FEDAVG' },
+  { model: 'Federated + DP-SGD', status: 'MEASURED (window-level ε)' },
 ];
 
 export function DocsPage() {
@@ -68,7 +69,7 @@ export function DocsPage() {
             <p>Design: Flower across <span className="num">4</span> silos + Opacus DP-SGD + cosine-median robust aggregation.</p>
             <div className="num mt-2 rounded-md bg-page px-2.5 py-2 text-xs">s_k = cos(Δw_k, Δw_med) &lt; 0 → reject</div>
             <p className="mt-2 text-ink-subtle">
-              Implemented: one-process toy FedAvg ({ml?.fl_simulation.rounds ?? '—'} rounds). The bit-flip demo {ml?.cosine_median_demo.caught ? 'rejects the corrupted silo' : 'is available'}; no real sites, no DP guarantee, no ε.
+              Two things are shown, kept apart: (1) the in-process toy FedAvg ({ml?.fl_simulation.rounds ?? '—'} rounds) that drives the SIMULATED_TOY_FEDAVG audit blocks, with no privacy guarantee; and (2) the measured participant-separated benchmark below, which does report a window-level ε from an exact RDP accountant. Flower and Opacus are still not used.
             </p>
           </SpecCard>
         </div>
@@ -76,7 +77,7 @@ export function DocsPage() {
 
       <section className="mt-10" aria-labelledby="benchmark-title">
         <Card>
-          <CardHeader eyebrow="Evaluation plan" title="Requested benchmarks" description="No Macro-F1, AUROC, Brier or ε values are invented. A dash means the benchmark has not been measured." />
+          <CardHeader eyebrow="Evaluation plan" title="Requested benchmarks" description="The four training regimes are now measured for heart-rate MAE and window-level ε (table below). Macro-F1, AUROC and Brier are classification metrics for a classifier that does not exist here, so they stay dashes rather than invented numbers." />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b border-line bg-page text-2xs uppercase tracking-wide text-ink-label">
@@ -87,13 +88,15 @@ export function DocsPage() {
                   <tr key={row.model}>
                     <td className="px-5 py-3 font-medium text-ink">{row.model}</td>
                     <td className="num px-4 py-3 text-ink-label">—</td><td className="num px-4 py-3 text-ink-label">—</td><td className="num px-4 py-3 text-ink-label">—</td><td className="num px-4 py-3 text-ink-label">—</td>
-                    <td className="px-5 py-3"><Badge tone={row.status === 'SIMULATED_TOY_FEDAVG' ? 'watch' : 'neutral'}>{row.status}</Badge></td>
+                    <td className="px-5 py-3"><Badge tone={row.status.startsWith('MEASURED') ? 'nominal' : 'watch'}>{row.status}</Badge></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </Card>
+
+        <FlDpBenchmarkPanel />
 
         <Card className="mt-4">
           <CardHeader eyebrow="Measured offline result" title="M6 heart-rate baselines" description="Leave-one-participant-out results on non-astronaut PhysioNet recordings (ODC-By 1.0). These are measured MAE values, not the requested classification benchmarks above." />

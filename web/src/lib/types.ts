@@ -92,6 +92,145 @@ export interface Subject {
   calibration: Calibration;
 }
 
+export type LifecycleStage =
+  | 'S0_NOMINAL'
+  | 'S1_EXERTION_COMPENSATED'
+  | 'S2_ACTIVE_SENSING_HOLD'
+  | 'S3_CREW_COUNTERMEASURE'
+  | 'S4_SURGEON_ESCALATED'
+  | 'S4_SURGEON_ACKNOWLEDGED';
+
+export type StageTone = 'nominal' | 'teal' | 'watch' | 'orange' | 'critical';
+
+export interface LifecycleTransition {
+  from_stage: string;
+  to_stage: string;
+  reason: string;
+  mission_t_s: number;
+  ts: string;
+}
+
+export interface Lifecycle {
+  stage: LifecycleStage;
+  label: string;
+  tone: StageTone;
+  reason: string;
+  requested_exam: string | null;
+  since_mission_t_s: number;
+  acknowledged: boolean;
+  action_required: boolean;
+  routing_label: string;
+  recent_transitions: LifecycleTransition[];
+}
+
+export type CommsState = 'QUEUED_BLACKOUT' | 'IN_TRANSIT' | 'DELIVERED' | 'ACKNOWLEDGED';
+
+export interface Sbar {
+  situation: string;
+  background: string;
+  assessment: string;
+  recommendation: string;
+}
+
+export interface SurgeonReceipt {
+  receipt_id: string;
+  packet_id: string;
+  role: string;
+  directive: string;
+  acknowledged_at: string;
+  sha256: string;
+}
+
+export interface OutboxPacket {
+  packet_id: string;
+  case_id: string;
+  created_at: string;
+  comms_state: CommsState;
+  habitat: string;
+  delay_s: number;
+  countdown_s: number | null;
+  finding: string;
+  fingerprint: string;
+  sbar: Sbar;
+  delivered_at: string | null;
+  acknowledged_at: string | null;
+  receipt: SurgeonReceipt | null;
+}
+
+export interface CommsProfile {
+  key: string;
+  label: string;
+  delay_s: number;
+  real_world_note: string;
+}
+
+export interface Comms {
+  profile: CommsProfile;
+  blackout: boolean;
+  packets: OutboxPacket[];
+}
+
+export interface MissionClock {
+  hz: number;
+  period_s: number;
+  running: boolean;
+  mission_seconds_per_demo_hour: number;
+  tau_basis: string;
+}
+
+export interface ReplayLane {
+  active: boolean;
+  participant: string | null;
+  available: boolean;
+  lane: Lane;
+  provenance: string;
+  participants: string[];
+  n_windows: number;
+  window_s: number;
+  replay_rate_hz: number;
+  time_compressed: string;
+  active_windows?: number;
+  window_index?: number | null;
+  detail?: string;
+}
+
+export interface FlDpRegime {
+  regime: string;
+  label: string;
+  mae_bpm: {
+    mean: number; median: number; sd: number | null; ci_low: number; ci_high: number;
+    n_participants: number; resamples: number; seed: number; unit: string;
+    gap_vs_centralized_bpm: number;
+  };
+  window_level_epsilon?: { min_over_folds: number; max_over_folds: number; delta: number; note: string };
+}
+
+export interface FlDpBenchmark {
+  available: boolean;
+  detail: string;
+  sha256: string | null;
+  path?: string;
+  results: {
+    title: string;
+    scope: string;
+    config: Record<string, unknown>;
+    provenance: Record<string, unknown>;
+    dataset: { n_windows: number; n_features: number; participants: string[]; client_groups: string[][] };
+    threat_model: { level: string; delta: number; not_covered: string[]; guarantee_covers: string };
+    accuracy: {
+      table: FlDpRegime[];
+      dp_accountant_example: Record<string, unknown>;
+      frozen_m6_cross_check?: { matches: boolean | null; measured_mae_bpm: number; expected_mae_bpm: number | null };
+    };
+    dp_privacy_utility: { sweep: Array<{ noise_multiplier: number; mae_bpm: { mean: number }; window_level_epsilon_worst_case: number; is_default_operating_point: boolean }> };
+    robustness: {
+      runs: Array<{ fault: string; aggregator: string; n_seeds: number; mae_bpm_mean_over_seeds: number | null; mae_bpm_sd_over_seeds: number | null; diverged_seeds: number; outcome: string }>;
+      comparison: Array<{ fault: string; fedavg_mae_bpm: number | null; cosine_median_mae_bpm: number | null; improvement_bpm: number | null; finding?: string }>;
+    };
+    limitations: string[];
+  } | null;
+}
+
 export interface OrganReading {
   system: string;
   label: string;
@@ -104,6 +243,8 @@ export interface OrganReading {
   hazard: string;
   staleness_tau: number | null;
   age_hours: number | null;
+  tau_basis?: string;
+  mission_age_s?: number | null;
   z_score?: number | null;
   baseline_note?: string;
   action: string;
@@ -213,7 +354,7 @@ export interface OrgansResponse extends Envelope {
 /* ---- unified live workstation (/api/state) ---- */
 
 export type DataSourceMode = 'REAL_EMPIRICAL' | 'SIMULATED_FALLBACK';
-export type TelemetryMode = DataSourceMode | 'NOT_AVAILABLE';
+export type TelemetryMode = DataSourceMode | 'NOT_AVAILABLE' | 'RECORDED_REPLAY';
 export type HabitatKey = 'station' | 'transit' | 'lunar' | 'rover';
 
 export interface WorkstationHistoryPoint {
@@ -249,10 +390,21 @@ export interface WorkstationState extends Envelope {
   scenario_key: string | null;
   running: boolean;
   t_s: number;
-  demo_scenarios: Array<{ id: string; label: string }>;
+  demo_scenarios: Array<{ id: string; label: string; stage_hint?: string }>;
+  case_id?: string;
+  session_id?: string;
+  clock?: MissionClock;
+  lifecycle?: Lifecycle;
+  comms?: Comms;
+  replay?: ReplayLane;
   sources: {
     lab: LaneInfo;
-    goes: { available: boolean; detail?: string; url: string; channels: Record<string, unknown>; dose_mgy_day: number | null };
+    goes: {
+      available: boolean; detail?: string; url: string; channels: Record<string, unknown>;
+      dose_mgy_day: number | null; unit?: string; unit_long?: string; cache_age_s?: number | null;
+      dose_note?: string; quantity?: string;
+      latest_sample?: { energy: string; flux: number; time_tag: string } | null;
+    };
     wearable: { available: boolean; detail: string; features: Record<string, number | null>; wesad: string };
   };
   organs: OrganReading[];
@@ -274,13 +426,14 @@ export interface WorkstationState extends Envelope {
   };
   countermeasure_flags: { water_low: boolean | null; ared_low: boolean | null; label: string };
   readiness: Readiness & { freshness_tau_avg: number | null; badges: Array<{ id: string; label: string; unlocked: boolean }> };
-  ml_benchmark: {
+  ml_benchmark?: {
     provenance: string;
     measured_m6_hr: Array<{ model: string; mae_bpm: number; ci_low: number | null; ci_high: number | null }>;
     not_implemented: string[];
     requested_benchmarks: Array<{ model: string; status: string; metric: string | null }>;
     fl_simulation: { n_clients: number; rounds: number; global_weights: number[]; label: string };
     cosine_median_demo: { caught: boolean; silo_index: number; rejected: Array<{ silo_index: number; cosine: number }>; label: string };
+    fl_dp_benchmark?: FlDpBenchmark;
   };
   audit: {
     verification: { ok: boolean; entries: number; reason: string };

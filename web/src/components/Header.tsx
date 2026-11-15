@@ -6,8 +6,8 @@ import { Badge, Button } from './ui';
 import { cn } from '../lib/utils';
 
 const NAV = [
-  { to: '/', index: '01', label: 'Overview' },
-  { to: '/workstation', index: '02', label: 'Crew Workstation' },
+  { to: '/', index: '01', label: 'Crew Workstation' },
+  { to: '/overview', index: '02', label: 'Overview' },
   { to: '/docs', index: '03', label: 'ML Architecture & Docs' },
 ];
 
@@ -42,7 +42,7 @@ export function Header() {
             >
               <span className="num hidden text-2xs text-ink-label lg:inline">{item.index}.</span>
               <span className="hidden md:inline">{item.label}</span>
-              <span className="md:hidden">{item.index === '01' ? 'Overview' : item.index === '02' ? 'Workstation' : 'Docs'}</span>
+              <span className="md:hidden">{item.index === '01' ? 'Workstation' : item.index === '02' ? 'Overview' : 'Docs'}</span>
             </NavLink>
           ))}
         </nav>

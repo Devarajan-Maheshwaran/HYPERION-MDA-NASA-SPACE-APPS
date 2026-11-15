@@ -144,8 +144,29 @@ export const api = {
       }
     >('/api/lab/osd575'),
   state: () => request<import('./types').WorkstationState>('/api/state'),
-  scenario: (payload: { scenario_id?: string; habitat?: string; mode?: string }) =>
+  scenario: (payload: { scenario_id?: string; habitat?: string; mode?: string; replay_participant?: string }) =>
     request<import('./types').WorkstationState>('/api/scenario', { method: 'POST', body: JSON.stringify(payload) }),
+  transport: (action: 'play' | 'pause' | 'step', dtS?: number) =>
+    request<import('./types').WorkstationState>('/api/transport', {
+      method: 'POST', body: JSON.stringify(dtS === undefined ? { action } : { action, dt_s: dtS }),
+    }),
+  resetCase: () =>
+    request<import('./types').WorkstationState>('/api/case/reset', { method: 'POST', body: '{}' }),
+  outbox: () =>
+    request<Envelope & { packets: import('./types').OutboxPacket[]; blackout: boolean; stage: string }>(
+      '/api/surgeon/outbox',
+    ),
+  setBlackout: (blackout: boolean) =>
+    request<Envelope & { packets: import('./types').OutboxPacket[]; blackout: boolean }>(
+      '/api/surgeon/blackout', { method: 'POST', body: JSON.stringify({ blackout }) },
+    ),
+  acknowledgePacket: (packetId: string, directive: string) =>
+    request<import('./types').WorkstationState & { receipt: import('./types').SurgeonReceipt }>(
+      '/api/surgeon/acknowledge',
+      { method: 'POST', body: JSON.stringify({ packet_id: packetId, directive }) },
+    ),
+  flDpBenchmark: () =>
+    request<Envelope & { benchmark: import('./types').FlDpBenchmark }>('/api/benchmark/fl-dp'),
   examPvt: (reactionMs: number[], subjectId?: string) =>
     request<import('./types').WorkstationState>('/api/exams/pvt', {
       method: 'POST', body: JSON.stringify({ reaction_ms: reactionMs, subject_id: subjectId }),
@@ -175,6 +196,46 @@ export function subscribeFrames(
         onFrame(JSON.parse((event as MessageEvent<string>).data) as Frame);
       } catch {
         // ignore a malformed frame rather than breaking the stream
+      }
+    });
+    source.addEventListener('error', () => {
+      onStatus?.(false);
+      source?.close();
+      if (!closed) retry = setTimeout(connect, 2000);
+    });
+  };
+
+  connect();
+  return () => {
+    closed = true;
+    if (retry) clearTimeout(retry);
+    source?.close();
+    onStatus?.(false);
+  };
+}
+
+/** Cockpit SSE: full `state` snapshots at the server's 1 Hz, with automatic reconnect.
+ *
+ * The server owns the clock. The browser never advances mission time itself, so a
+ * reconnect or a background tab cannot invent telemetry that was never computed.
+ */
+export function subscribeState(
+  onState: (state: import('./types').WorkstationState) => void,
+  onStatus?: (connected: boolean) => void,
+): () => void {
+  let source: EventSource | null = null;
+  let closed = false;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+
+  const connect = (): void => {
+    if (closed) return;
+    source = new EventSource('/api/stream/events');
+    source.addEventListener('open', () => onStatus?.(true));
+    source.addEventListener('state', (event) => {
+      try {
+        onState(JSON.parse((event as MessageEvent<string>).data) as import('./types').WorkstationState);
+      } catch {
+        // a malformed snapshot must not kill the stream
       }
     });
     source.addEventListener('error', () => {

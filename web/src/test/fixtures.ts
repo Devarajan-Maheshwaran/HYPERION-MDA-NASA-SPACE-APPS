@@ -1,4 +1,4 @@
-import type { OrganReading, WorkstationState } from '../lib/types';
+import type { Comms, Lifecycle, OrganReading, OutboxPacket, ReplayLane, WorkstationState } from '../lib/types';
 
 const organs: OrganReading[] = [
   ['head-eyes', 'Head & Eyes', 4.6, 'mm', 'onsd = 4.6 mm'],
@@ -15,6 +15,50 @@ const organs: OrganReading[] = [
   action: 'Repeat measurement', evidence: 'Crew-entered demo check.',
 }));
 
+export function makeLifecycle(overrides: Partial<Lifecycle> = {}): Lifecycle {
+  return {
+    stage: 'S0_NOMINAL', label: 'S0 · NOMINAL MONITORING', tone: 'nominal',
+    reason: 'No demo rule or gate raised a finding.', requested_exam: null,
+    since_mission_t_s: 0, acknowledged: false, action_required: false,
+    routing_label: 'DEMO routing table, not a validated triage standard',
+    recent_transitions: [], ...overrides,
+  };
+}
+
+export function makePacket(overrides: Partial<OutboxPacket> = {}): OutboxPacket {
+  return {
+    packet_id: 'pkt-abcdefgh', case_id: 'case-default', created_at: '2026-11-14T12:00:00.000Z',
+    comms_state: 'IN_TRANSIT', habitat: 'station', delay_s: 0.2, countdown_s: 0.1,
+    finding: 'Cabin CO2 = 4.2 mmHg (SIMULATED)', fingerprint: 'abc123def4567890',
+    sbar: {
+      situation: 'S4 escalation for demo-crew-1 at T+0002s.',
+      background: 'Lane SIMULATED. Habitat Orbital Station.',
+      assessment: 'Head & Eyes ALERT. Gate 3 HOLD.',
+      recommendation: 'Contact flight surgeon. Repeat measurement.',
+    },
+    delivered_at: null, acknowledged_at: null, receipt: null, ...overrides,
+  };
+}
+
+export function makeComms(overrides: Partial<Comms> = {}): Comms {
+  return {
+    profile: { key: 'station', label: 'Orbital Station', delay_s: 0.2,
+               real_world_note: 'Near-real-time relay; demo timer, not a link budget.' },
+    blackout: false, packets: [], ...overrides,
+  };
+}
+
+export function makeReplay(overrides: Partial<ReplayLane> = {}): ReplayLane {
+  return {
+    active: false, participant: null, available: true, lane: 'RECORDED-NON-ASTRONAUT',
+    provenance: 'PhysioNet Wrist PPG During Exercise v1.0.0 · committed M6 windows',
+    participants: ['s1', 's2', 's3', 's4', 's5', 's6', 's8', 's9'],
+    n_windows: 3332, window_s: 8, replay_rate_hz: 1,
+    time_compressed: '8 s recorded window advanced once per mission second (time-compressed replay).',
+    active_windows: 0, window_index: null, ...overrides,
+  };
+}
+
 export function makeState(overrides: Partial<WorkstationState> = {}): WorkstationState {
   const base: WorkstationState = {
     lane: 'SIMULATED', provenance: 'SIMULATED MISSION TELEMETRY FALLBACK', generated_at: '2026-11-14T12:00:00.000Z',
@@ -29,6 +73,12 @@ export function makeState(overrides: Partial<WorkstationState> = {}): Workstatio
     data_source_mode: 'SIMULATED_FALLBACK', telemetry_mode: 'SIMULATED_FALLBACK',
     provenance_banner: 'SIMULATED MISSION TELEMETRY FALLBACK (Physics-Guided Physiological Scenario Engine — Explicitly Labeled Non-Flight Simulation)',
     subject_id: 'demo-crew-1', scenario_key: 'nominal-orbital', running: true, t_s: 2,
+    case_id: 'case-default', session_id: 'session-demo',
+    clock: { hz: 1, period_s: 1, running: true, mission_seconds_per_demo_hour: 60,
+             tau_basis: 'mission clock, demo compression: 60 mission seconds = 1 hour of evidence age' },
+    lifecycle: makeLifecycle(),
+    comms: makeComms(),
+    replay: makeReplay(),
     demo_scenarios: [
       { id: 'nominal-orbital', label: '1. Nominal 0g' }, { id: 'eva-ared-exercise', label: '2. Exercise False-Alarm Test' },
       { id: 'sans-stale-eye', label: '3. SANS + Stale Eye Scan' }, { id: 'spe-radiation', label: '4. Solar Radiation Spike' },
@@ -36,7 +86,13 @@ export function makeState(overrides: Partial<WorkstationState> = {}): Workstatio
     ],
     sources: {
       lab: { lane: 'LAB DATA', available: true, detail: 'OSD-575 SHA-256 verified', provenance: 'NASA OSDR' },
-      goes: { available: false, detail: 'GOES live unreachable; cached flux only', url: 'https://www.swpc.noaa.gov/', channels: {}, dose_mgy_day: null },
+      goes: {
+        available: false, detail: 'GOES live unreachable; no cached flux', url: 'https://www.swpc.noaa.gov/',
+        channels: {}, dose_mgy_day: null, unit: 'pfu', unit_long: 'particles / (cm^2 * s * sr)',
+        cache_age_s: null, latest_sample: null,
+        quantity: 'integral proton flux (environmental indicator, not tissue dose)',
+        dose_note: 'GOES integral proton flux is an environmental space-weather indicator in pfu, NOT absorbed tissue dose in mGy/day.',
+      },
       wearable: { available: false, detail: 'WESAD NO-GO', features: {}, wesad: 'NO-GO' },
     },
     organs,
@@ -84,6 +140,8 @@ export function exerciseState(): WorkstationState {
   state.gates = state.gates.map((gate) => gate.gate === 2 ? { ...gate, outcome: 'BLOCK', reason: 'rate explained by this person’s activity scale', evidence: { ...gate.evidence, hr_bpm: 148, activity_norm: 16.4 } } : gate);
   state.overlays = { ...state.overlays, enmo_g: 0.31 };
   state.triage = { ...state.triage, tier: 'WATCH', why: 'Gate 2 blocked an exercise false alarm; movement explains the rate.' };
+  state.lifecycle = makeLifecycle({ stage: 'S1_EXERTION_COMPENSATED', label: 'S1 · EXERTION COMPENSATED',
+    tone: 'teal', reason: 'Gate 2 explained this rate by the personal activity scale.' });
   return state;
 }
 
@@ -92,5 +150,48 @@ export function sansState(): WorkstationState {
   state.gates = state.gates.map((gate) => gate.gate === 3 ? { ...gate, outcome: 'HOLD', reason: 'cabin CO2 elevated and eye scan stale; request guided ONSD ultrasound', evidence: { ...gate.evidence, requested_exam: 'ultrasound', min_tau: 0.18 } } : gate);
   state.triage = { ...state.triage, tier: 'CREW', why: 'Gate 3 held the ground alarm. Run the guided eye ultrasound tab next.' };
   state.active_sensing = { ...state.active_sensing, top: { exam: 'onsd', label: 'Guided eye ultrasound (ONSD mm)', tau: 0.18, score: 3.2, cost_min: 2 } };
+  state.lifecycle = makeLifecycle({ stage: 'S2_ACTIVE_SENSING_HOLD', label: 'S2 · ACTIVE SENSING HOLD',
+    tone: 'watch', reason: 'Cabin CO2 elevated and the eye scan is stale.',
+    requested_exam: 'ultrasound', action_required: true });
+  return state;
+}
+
+export function escalatedState(): WorkstationState {
+  const state = sansState();
+  state.scenario_key = 'spe-radiation';
+  state.lifecycle = makeLifecycle({ stage: 'S4_SURGEON_ESCALATED', label: 'S4 · SURGEON ESCALATED',
+    tone: 'critical', reason: 'A demo alert rule was crossed; SBAR packet queued.' });
+  state.triage = { ...state.triage, tier: 'SURGEON', why: 'Escalated to the flight surgeon.' };
+  state.comms = makeComms({ packets: [makePacket()] });
+  return state;
+}
+
+export function deliveredState(): WorkstationState {
+  const state = escalatedState();
+  state.comms = makeComms({ packets: [makePacket({ comms_state: 'DELIVERED', countdown_s: null,
+    delivered_at: '2026-11-14T12:00:01.000Z' })] });
+  return state;
+}
+
+export function acknowledgedState(): WorkstationState {
+  const state = escalatedState();
+  state.lifecycle = makeLifecycle({ stage: 'S4_SURGEON_ACKNOWLEDGED', label: 'S4 · SURGEON ACKNOWLEDGED',
+    tone: 'critical', reason: 'Flight surgeon acknowledged this finding.', acknowledged: true });
+  state.comms = makeComms({ packets: [makePacket({
+    comms_state: 'ACKNOWLEDGED', countdown_s: null,
+    delivered_at: '2026-11-14T12:00:01.000Z', acknowledged_at: '2026-11-14T12:00:02.000Z',
+    receipt: { receipt_id: 'rcpt-abcdefgh', packet_id: 'pkt-abcdefgh', role: 'flight-surgeon',
+               directive: 'Recheck ONSD in 30 minutes.', acknowledged_at: '2026-11-14T12:00:02.000Z',
+               sha256: 'b'.repeat(64) },
+  })] });
+  return state;
+}
+
+export function replayState(): WorkstationState {
+  // Matches the API: recorded replay is real (non-astronaut) data, not a simulation.
+  const state = makeState({ scenario_key: null, telemetry_mode: 'RECORDED_REPLAY',
+    data_source_mode: 'REAL_EMPIRICAL', lane: 'RECORDED-NON-ASTRONAUT',
+    provenance_banner: 'RECORDED HUMAN REPLAY · NON-ASTRONAUT · PhysioNet exercise data' });
+  state.replay = makeReplay({ active: true, participant: 's1', active_windows: 868, window_index: 12 });
   return state;
 }

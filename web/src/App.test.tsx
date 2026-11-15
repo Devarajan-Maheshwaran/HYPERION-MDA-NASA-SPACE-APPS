@@ -15,16 +15,26 @@ vi.mock('./lib/api', async () => {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('three-view application shell', () => {
-  it('switches Overview → Workstation → Docs and exposes the provenance popover', async () => {
+  it('boots directly into the live Crew Workstation, never a blank chart', async () => {
+    const assertQuiet = expectNoConsoleErrors();
+    vi.mocked(api.state).mockResolvedValue(makeState());
+    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+    await screen.findByRole('heading', { name: 'Assess. Verify. Act.' });
+    expect(screen.getAllByLabelText('Raw heart rate and residual chart')).toHaveLength(1);
+    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeTruthy();
+    assertQuiet();
+  });
+
+  it('keeps Overview and Docs reachable and exposes the provenance popover', async () => {
     const assertQuiet = expectNoConsoleErrors();
     vi.mocked(api.state).mockResolvedValue(makeState());
     vi.mocked(api.scenario).mockResolvedValue(makeState({ data_source_mode: 'REAL_EMPIRICAL', telemetry_mode: 'NOT_AVAILABLE', frame: null, history: [], gates: [] }));
-    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/overview']}><App /></MemoryRouter>);
 
     await screen.findByRole('heading', { level: 1, name: /Helping astronauts/ });
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('link', { name: /02.*Crew Workstation/ }));
+    fireEvent.click(screen.getByRole('link', { name: /01.*Crew Workstation/ }));
     await screen.findByRole('heading', { name: 'Assess. Verify. Act.' });
 
     fireEvent.click(screen.getByRole('link', { name: /03.*ML Architecture & Docs/ }));

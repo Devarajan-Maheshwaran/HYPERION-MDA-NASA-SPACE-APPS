@@ -14,7 +14,7 @@ describe('Overview landing page', () => {
   it('explains the mission problem and links to the two product views', () => {
     renderOverview();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('filter out exercise false alarms');
-    expect(screen.getByRole('link', { name: /Launch Live Crew Workstation/ }).getAttribute('href')).toBe('/workstation');
+    expect(screen.getByRole('link', { name: /Launch Live Crew Workstation/ }).getAttribute('href')).toBe('/');
     expect(screen.getByRole('link', { name: /Read ML & System Docs/ }).getAttribute('href')).toBe('/docs');
     expect(screen.getByText('z = (x − μ₀) / σ₀')).toBeTruthy();
     expect(screen.getByText('τ = e^(−λΔt)')).toBeTruthy();

@@ -1,0 +1,44 @@
+# One service, one origin. The named volume is what makes P0-2 real: restarting or
+# recreating the container resumes the same mission clock, lifecycle stage, exams,
+# outbox and audit chain.
+#
+#   docker compose up --build
+#   open http://localhost:8000
+#
+#   docker compose restart workstation   # state survives
+#   docker compose down                  # state survives (volume kept)
+#   docker compose down -v               # state deliberately destroyed
+
+services:
+  workstation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hyperion-mda:local
+    container_name: hyperion-crew-workstation
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      HYPERION_STATE_DB: /app/var/hyperion-state.db
+      # Optional external caches. Nothing is downloaded at startup; absent lanes
+      # report NOT_AVAILABLE rather than inventing values.
+      HYPERION_MDA_DATA_DIR: /app/data
+    volumes:
+      - hyperion-state:/app/var
+      - ./data:/app/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  hyperion-state:

@@ -9,12 +9,14 @@ export const HABITATS: Array<{ key: HabitatKey; label: string; delay: string }> 
   { key: 'rover', label: 'Surface Rover (EVA)', delay: '—' },
 ];
 
+/** Display copy for the five demo lanes. The API supplies the ids and the expected stage;
+ *  these strings are UI wording, not measured values. */
 export const SCENARIOS = [
-  { id: 'nominal-orbital', label: 'Nominal Rest' },
-  { id: 'eva-ared-exercise', label: 'Exercise Bout Blocks False Alarm' },
-  { id: 'sans-stale-eye', label: 'High CO₂ + SANS Eye Risk' },
-  { id: 'spe-radiation', label: 'Solar Radiation Spike' },
-  { id: 'glycemic-circadian', label: 'Blood Sugar & Sleep Drift' },
+  { id: 'nominal-orbital', label: 'Nominal Rest', stage: 'S0' },
+  { id: 'eva-ared-exercise', label: 'Exercise Bout Blocks False Alarm', stage: 'S1' },
+  { id: 'sans-stale-eye', label: 'High CO₂ + SANS Eye Risk', stage: 'S2' },
+  { id: 'spe-radiation', label: 'Solar Radiation Spike', stage: 'S4' },
+  { id: 'glycemic-circadian', label: 'Blood Sugar & Sleep Drift', stage: 'S3' },
 ] as const;
 
 export function organTone(status: OrganStatus): Tone {

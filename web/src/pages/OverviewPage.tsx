@@ -75,7 +75,7 @@ export function OverviewPage() {
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            to="/workstation"
+            to="/"
             className="inline-flex h-12 items-center gap-2 rounded-lg bg-primary px-5 text-md font-medium text-white transition-colors hover:bg-primary-hover"
           >
             Launch Live Crew Workstation <ArrowRight size={16} aria-hidden />

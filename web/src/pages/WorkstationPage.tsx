@@ -6,99 +6,81 @@ import { GatePipeline } from '../components/GatePipeline';
 import { TelemetryChart } from '../components/TelemetryChart';
 import { TriageCard } from '../components/TriageCard';
 import { CrewChecks, type CrewTool } from '../components/checks/CrewChecks';
-import { Badge, Button, Card, Tabs } from '../components/ui';
-import { HABITATS, SCENARIOS, recommendedTool } from '../lib/clinical';
+import { ControlStrip } from '../components/cockpit/ControlStrip';
+import { LifecycleBanner } from '../components/cockpit/LifecycleBanner';
+import { GateStrip } from '../components/cockpit/GateStrip';
+import { InstrumentBay } from '../components/cockpit/InstrumentBay';
+import { CommsOutbox } from '../components/cockpit/CommsOutbox';
+import { ProvenancePanel } from '../components/cockpit/ProvenancePanel';
+import { Badge, Tabs } from '../components/ui';
+import { recommendedTool } from '../lib/clinical';
 import { useWorkstation } from '../state/WorkstationProvider';
 import { cn } from '../lib/utils';
 
 export function WorkstationPage() {
-  const { state, busy, revision, notice, dismissNotice, selectScenario, selectHabitat } = useWorkstation();
+  const { state, revision, notice, dismissNotice } = useWorkstation();
   const [selectedOrgan, setSelectedOrgan] = useState('head-eyes');
   const [tab, setTab] = useState<'gate' | 'checks'>('gate');
   const [tool, setTool] = useState<CrewTool>('pvt');
 
+  const scenarioKey = state?.scenario_key;
+  const requestedExam = state?.lifecycle?.requested_exam;
+  const actionRequired = state?.lifecycle?.action_required ?? false;
+
   useEffect(() => {
     if (state) setTool(recommendedTool(state));
-  }, [state?.scenario_key]); // Recommend the right tool when the scenario changes, not on every poll.
+    // Re-focus the instrument only when the case changes, not on every 1 Hz tick.
+  }, [scenarioKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // An S2 hold auto-focuses the exam that resolves it. The astronaut never hunts for it.
+    if (actionRequired && requestedExam === 'ultrasound') setTool('ultrasound');
+  }, [actionRequired, requestedExam]);
 
   if (!state) return null;
   const organ = state.organs.find((item) => item.system === selectedOrgan) ?? state.organs[0];
   const simulated = state.data_source_mode === 'SIMULATED_FALLBACK';
+  const recorded = state.telemetry_mode === 'RECORDED_REPLAY';
 
   const openCheck = () => {
     setTool(recommendedTool(state));
     setTab('checks');
   };
-  const saved = () => {
-    setTab('gate');
-  };
 
   return (
-    <div className="mx-auto max-w-content px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-content px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="label-micro">Live crew workstation</div>
-          <h1 className="mt-1 text-3xl">Assess. Verify. Act.</h1>
-          <p className="mt-1 text-sm text-ink-body">Six organ systems, three deterministic gates, and the next useful crew check.</p>
+          <h1 className="mt-0.5 text-3xl">Assess. Verify. Act.</h1>
         </div>
-        <div className="flex items-center gap-2 text-xs text-ink-subtle">
-          <span className={cn('h-2 w-2 rounded-full', state.running ? 'bg-nominal' : 'bg-neutral')} aria-hidden />
-          {state.running ? 'Scenario engine running' : 'Stream stopped'}
-          <span className="num rounded-md border border-line bg-white px-2 py-1 text-2xs">{state.subject_id}</span>
+        <div className="flex items-center gap-2">
+          <Badge tone="neutral">{state.subject_id}</Badge>
+          <Badge tone={state.audit.verification.ok ? 'nominal' : 'critical'}>
+            audit {state.audit.verification.ok ? 'chain intact' : 'BROKEN'}
+          </Badge>
         </div>
       </div>
 
-      <section className="mt-5" aria-label="Mission habitat">
-        <div className="label-micro mb-2">Habitat</div>
-        <div className="flex flex-wrap gap-2">
-          {HABITATS.map((habitat) => (
-            <button
-              key={habitat.key}
-              type="button"
-              disabled={busy}
-              aria-pressed={state.habitat === habitat.key}
-              onClick={() => void selectHabitat(habitat.key)}
-              className={cn(
-                'rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-60',
-                state.habitat === habitat.key ? 'border-primary bg-primary text-white' : 'border-line bg-white text-ink-body hover:border-line-strong',
-              )}
-            >
-              {habitat.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-4" aria-label="Stress-test scenarios">
-        <div className="label-micro mb-2">Scenario</div>
-        <div className="flex flex-wrap gap-2">
-          {SCENARIOS.map((scenario, index) => (
-            <Button
-              key={scenario.id}
-              variant={state.scenario_key === scenario.id ? 'primary' : 'secondary'}
-              size="sm"
-              disabled={busy}
-              aria-pressed={state.scenario_key === scenario.id}
-              onClick={() => void selectScenario(scenario.id)}
-              className="h-9"
-            >
-              <span className="num text-2xs opacity-60">{String(index + 1).padStart(2, '0')}</span>
-              {scenario.label}
-            </Button>
-          ))}
-        </div>
-      </section>
+      <div className="mt-4">
+        <ControlStrip state={state} />
+      </div>
 
       <div className={cn(
-        'mt-4 flex items-start gap-3 rounded-xl border px-4 py-3',
-        simulated ? 'border-watch/25 bg-watch-soft text-watch-text' : 'border-line bg-white text-ink-body',
+        'mt-3 flex items-start gap-3 rounded-xl border px-4 py-2.5',
+        simulated ? 'border-watch/25 bg-watch-soft text-watch-text'
+          : recorded ? 'border-primary-blue/25 bg-primary-blue-soft text-ink-body'
+            : 'border-line bg-white text-ink-body',
       )} role="status">
-        <FlaskConical size={17} className="mt-0.5 shrink-0" aria-hidden />
-        <div>
+        <FlaskConical size={16} className="mt-0.5 shrink-0" aria-hidden />
+        <div className="min-w-0">
           <div className="text-xs font-bold tracking-wide">
-            {simulated ? 'SIMULATED SCENARIO FALLBACK ACTIVE' : state.telemetry_mode === 'NOT_AVAILABLE' ? 'REAL-SOURCE MODE · LIVE TELEMETRY NOT AVAILABLE' : 'REAL EMPIRICAL TELEMETRY'}
+            {simulated ? 'SIMULATED SCENARIO FALLBACK ACTIVE'
+              : recorded ? 'RECORDED HUMAN REPLAY · NON-ASTRONAUT'
+                : state.telemetry_mode === 'NOT_AVAILABLE' ? 'REAL-SOURCE MODE · LIVE TELEMETRY NOT AVAILABLE'
+                  : 'REAL EMPIRICAL TELEMETRY'}
           </div>
-          <p className="mt-0.5 text-xs leading-5">
+          <p className="mt-0.5 text-2xs leading-4">
             {simulated
               ? 'Physics-guided physiological scenario used for live stress-testing. Explicitly labeled non-flight simulation.'
               : state.provenance_banner}
@@ -114,40 +96,50 @@ export function WorkstationPage() {
         </div>
       ) : null}
 
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[2fr_3fr]">
-        <div className="space-y-4">
-          <Card className="p-4">
-            <div className="mb-2 flex items-center justify-between px-1">
+      {/* 3 / 5 / 4 cockpit: body + focused organ · lifecycle + gates + chart · instruments + comms */}
+      <div className="mt-4 grid items-start gap-4 xl:grid-cols-12">
+        <div className="space-y-3 xl:col-span-3">
+          <div className="card-surface p-3">
+            <div className="mb-1.5 flex items-center justify-between px-1">
               <span className="label-micro">Organ systems</span>
-              <Badge tone="neutral">{state.organs.length} systems</Badge>
+              <Badge tone="neutral">{state.organs.length}</Badge>
             </div>
             <BodyMap organs={state.organs} selected={selectedOrgan} onSelect={setSelectedOrgan} />
-          </Card>
+          </div>
           {organ ? <OrganDetail organ={organ} /> : null}
+          <ProvenancePanel state={state} />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-3 xl:col-span-5">
+          {state.lifecycle ? <LifecycleBanner lifecycle={state.lifecycle} /> : null}
+          <GateStrip gates={state.gates} revision={revision} />
+          <TelemetryChart state={state} />
           <Tabs
             label="Workstation panels"
             active={tab}
             onChange={(id) => setTab(id === 'checks' ? 'checks' : 'gate')}
-            className="mb-4 w-full"
+            className="w-full"
             items={[
               { id: 'gate', label: 'A · Safety gate & triage' },
               { id: 'checks', label: 'B · Crew checks', badge: state.triage.tier === 'CREW' ? <Badge tone="watch">1</Badge> : undefined },
             ]}
           />
-          <div role="tabpanel" className="space-y-4">
+          <div role="tabpanel" className="space-y-3">
             {tab === 'gate' ? (
               <>
                 <GatePipeline state={state} revision={revision} onOpenCheck={openCheck} />
-                <TelemetryChart state={state} />
                 <TriageCard triage={state.triage} onOpenCheck={openCheck} />
               </>
             ) : (
-              <CrewChecks state={state} activeTool={tool} onSelectTool={setTool} onSaved={saved} />
+              <CrewChecks state={state} activeTool={tool} onSelectTool={setTool}
+                          onSaved={() => setTab('gate')} renderPanel={false} />
             )}
           </div>
+        </div>
+
+        <div className="space-y-3 xl:col-span-4">
+          <InstrumentBay state={state} activeTool={tool} onSelectTool={setTool} onSaved={() => setTab('gate')} />
+          {state.comms ? <CommsOutbox comms={state.comms} /> : null}
         </div>
       </div>
     </div>

@@ -44,8 +44,11 @@ function Shell() {
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             >
               <Routes location={location}>
-                <Route path="/" element={<OverviewPage />} />
-                <Route path="/workstation" element={state ? <WorkstationPage /> : <Unavailable />} />
+                {/* Boot straight into the live cockpit: an astronaut in the seat must
+                    never land on a marketing page or an empty chart. */}
+                <Route path="/" element={state ? <WorkstationPage /> : <Unavailable />} />
+                <Route path="/workstation" element={<Navigate to="/" replace />} />
+                <Route path="/overview" element={<OverviewPage />} />
                 <Route path="/docs" element={<DocsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
