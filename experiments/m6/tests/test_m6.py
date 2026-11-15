@@ -1,7 +1,7 @@
 """M6 tests: leakage, ECG exclusion, model and metric correctness, reproducibility.
 
 Run from the project root:
-    .venv\\Scripts\\python -m unittest discover -s experiments/m6/tests -v
+    python -m unittest discover -s experiments/m6/tests -v
 Real-data tests skip with a stated reason if the PhysioNet cache is absent.
 Software verification only; no clinical or astronaut validation.
 """

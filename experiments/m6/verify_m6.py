@@ -5,7 +5,7 @@ the standard library (csv, math): it shares no metric code with run_m6.py. It th
 checks results.json, the summary CSVs, and that report.md is exactly what
 m6_report.render(results.json) produces.
 
-Usage:  .venv\\Scripts\\python experiments\\m6\\verify_m6.py [outputs_dir]
+Usage:  python experiments/m6/verify_m6.py [outputs_dir]
 Exit code 0 = every check passed.
 """
 

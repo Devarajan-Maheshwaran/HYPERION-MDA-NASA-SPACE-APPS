@@ -86,7 +86,7 @@ class StandardsClaimTests(unittest.TestCase):
 
 class DatasetProvenanceTests(unittest.TestCase):
     def test_osd_575_is_never_described_as_environmental(self):
-        """OSD-575 is a rodent hindlimb-unloading lab dataset, not cabin environment data."""
+        """OSD-575 is Inspiration4 human serum CMP lab data, not cabin environment data."""
         lane = lanes.lab_lane()
         blob = f"{lane.model_dump()} {text_of(API_SOURCES)} {text_of(UI_SOURCES)}".lower()
         self.assertIn("osd-575", blob)
@@ -97,9 +97,12 @@ class DatasetProvenanceTests(unittest.TestCase):
     def test_lab_lane_declares_its_true_provenance(self):
         lane = lanes.lab_lane()
         text = str(lane.model_dump()).lower()
-        self.assertTrue(any(word in text for word in ("rodent", "mouse", "mice", "hindlimb",
-                                                      "muscle", "lab")))
-        self.assertNotIn("astronaut", text.replace("non-astronaut", "").replace("not astronaut", ""))
+        self.assertIn("osd-575", text)
+        self.assertIn("lab", text)
+        manifest = lanes.osdr_manifest()
+        self.assertEqual(manifest["study_id"], "OSD-575")
+        self.assertIn("inspiration4", manifest["study_title"].lower())
+        self.assertIn("serum", manifest["study_title"].lower())
 
     def test_recorded_replay_is_badged_non_astronaut(self):
         with tempfile.TemporaryDirectory() as tmp:

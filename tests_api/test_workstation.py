@@ -134,8 +134,18 @@ class ExamTests(unittest.TestCase):
         brain = next(o for o in body["organs"] if o["system"] == "brain")
         self.assertAlmostEqual(brain["staleness_tau"], 1.0, places=2)
         entries = c.get("/api/audit", headers=OPS).json()["entries"]
-        self.assertTrue(any(e["event"] == "pvt.result" for e in entries))
-        self.assertNotIn("305", str(entries))
+        pvt_entries = [e for e in entries if e["event"] == "pvt.result"]
+        self.assertTrue(pvt_entries)
+        # The audit payload stores only the trial count. Do not scan SHA-256 hex fields:
+        # a digest can legitimately contain the same digits as a raw reaction time.
+        for entry in pvt_entries:
+            self.assertEqual(entry["detail"]["n"], 3)
+            self.assertEqual(entry["detail"]["kind"], "pvt")
+            self.assertLessEqual(set(entry["detail"]), {"kind", "n", "case_id"})
+        for entry in entries:
+            detail = str(entry["detail"])
+            for raw in ("288", "305", "340"):
+                self.assertNotIn(raw, detail)
 
     def test_ultrasound_samples_and_custom_caliper(self):
         c = client()

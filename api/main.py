@@ -957,7 +957,9 @@ def create_app(audit_path: Path | None = None, db_path: str | Path | None = None
 
     # ---------------- static web build ----------------
     dist = REPO_ROOT / "web" / "dist"
-    if dist.exists():
+    # Mount only a complete build. Vite can empty dist/ during a concurrent rebuild; API
+    # tests and headless API use must not depend on that transient frontend state.
+    if (dist / "index.html").is_file() and (dist / "assets").is_dir():
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
         @app.get("/{full_path:path}")
