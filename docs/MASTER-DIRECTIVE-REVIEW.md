@@ -41,7 +41,7 @@ The directive is treated as a **proposed long-term backlog**. Its §0 wording ("
 
 | Item | Verdict | Cat. | Reason / correction |
 |---|---|---|---|
-| Modular layout (`data_store/`, ingestion, DSP, models, app, tests) | **Keep, adapted** | — | Follows the existing `src/hyperion_mda/` package. The cache stays **outside the repo** (no data redistribution). |
+| Modular layout (`data_store/`, ingestion, DSP, models, app, tests) | **Keep, adapted** | — | Follows the existing `src/hyperion_mda/` package. The raw-data cache stays **outside the repo** (no raw recordings tracked in git; the tracked/not-tracked split is in `docs/DATA-SOURCE-INVENTORY.md` §3c). |
 | `trust_gate.py`, `clinical_fsm.py`, `config/nasa_csa_protocols.json` | **Remove** | — | Clinical gating and escalation need thresholds and protocols from a named authority with clinical review. None exists. |
 | `ultrasound_caliper.py` (automated ONSD) | **Remove** (automated) · **Defer** (manual, unvalidated) | [3] | No licensed image source. See Phase 4.4. |
 | `audit_ledger.py` (EVM) | **Remove** | — | See Phase 5.2. |
@@ -63,7 +63,7 @@ The directive is treated as a **proposed long-term backlog**. Its §0 wording ("
 | Stream 2: "converted to daily dose rate profile" | **Remove** | [3] | No validated dosimetry or transport method, and no mission parameters (shielding, trajectory, body model). Flux is not dose. |
 | Stream 2: habitat ppCO₂ and gravity values | **Remove** (as data) · **Defer** | [3] | No public cabin or gravity source. Values would be invented. Gravity can only appear as a **scenario label**, never as a measurement. |
 | Stream 3: WESAD (if on disk) | **Defer** | [3] | The gate is NO-GO: label codes, file formats, units, discarded IDs and redistribution are unverified. The S1/S12 claim is unverified. |
-| Stream 3: automatic PhysioNet fallback download "do not halt" | **Correct** | [2] | **Not automatic.** An explicit, approved milestone: download Wrist PPG During Exercise into a cache outside the repo, verify against PhysioNet's `SHA256SUMS.txt`, cite as required, and never redistribute. **Wearable Exam Stress is not used for stress tasks** (labels are exam grades). |
+| Stream 3: automatic PhysioNet fallback download "do not halt" | **Correct** | [2] | **Not automatic.** An explicit, approved milestone: download Wrist PPG During Exercise into a cache outside the repo, verify against PhysioNet's `SHA256SUMS.txt`, cite as required, and never bundle the **raw recordings**. (M5/M6 later tracked **derived** M6 outputs under ODC-By 1.0 with attribution — see `docs/DATA-SOURCE-INVENTORY.md` §3c.) **Wearable Exam Stress is not used for stress tasks** (labels are exam grades). |
 | DSP: HR from peaks, RMSSD, ENMO, kurtosis | **Keep, corrected** | [2] | On Wrist PPG, as a methods demo. HR-from-PPG is **checked against the dataset's reference R-peaks**, which is a real verification. RMSSD comes from ECG reference peaks. ENMO is computed only after the accelerometer **units are confirmed** from the WFDB headers. Kurtosis is a descriptive feature, **with no threshold**. |
 | DSP: resp rate, skin temperature, EDA | **Defer** | [3] | Those channels are **not in** Wrist PPG. They need a dataset that has them and passes its gate. |
 
@@ -178,7 +178,7 @@ The directive is treated as a **proposed long-term backlog**. Its §0 wording ("
 
 **M5: PhysioNet Wrist PPG non-astronaut methods lane: data gate and read-only ingestion.**
 1. **Isolated venv** with only the needed packages (numpy and scipy; `wfdb` **or** a minimal, tested WFDB reader for the specific format in the headers). No torch, Flower, Opacus or web3.
-2. **Data gate:** with your approval, download `wrist/1.0.0` into a cache **outside the repo**. Verify every file against PhysioNet's `SHA256SUMS.txt`, and write a provenance manifest (licence ODC-By 1.0, required citations, retrieval time). Never redistribute.
+2. **Data gate:** with your approval, download `wrist/1.0.0` into a cache **outside the repo**. Verify every file against PhysioNet's `SHA256SUMS.txt`, and write a provenance manifest (licence ODC-By 1.0, required citations, retrieval time). Never bundle the **raw recordings**. (As executed, M6's **derived** outputs were tracked with attribution — an approved deviation; see `docs/DATA-SOURCE-INVENTORY.md` §3c.)
 3. **Read-only adapter:** a `RecordedNonAstronautAdapter` behind the existing `WearableAdapter` interface. It provides the RECORDED-NON-ASTRONAUT registry status, its own banner, and never merges with NASA records.
 4. **One verified DSP check:** HR from wrist PPG compared against the dataset's reference ECG R-peaks, reported as per-participant error with no clinical claim. The accelerometer units are confirmed from the headers before any ENMO.
 5. **No model training** in M5. LOPO baselines would be M6, after M5's gate and tests pass.

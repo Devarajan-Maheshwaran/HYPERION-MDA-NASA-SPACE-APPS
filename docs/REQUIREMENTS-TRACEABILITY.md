@@ -154,7 +154,7 @@ Prepared 2026-11-14 against the code in `src/hyperion_mda/` and the tests in `te
 This document compares what the project materials **promise** with what the prototype **does**. It is an assessment of project material. It does not approve any requirement. Listing a capability here does not mean the team has decided to build it. NASA, CSA and other references are context: citing them does not establish endorsement and does not validate HYPERION-MDA. Nothing in this project has NASA approval, clinical validation, or flight readiness.
 
 > **Revision, 2026-11-14 (OSD-575 candidate):**
-> - The DATA-1 gate is now met for **one** dataset only: NASA OSDR **OSD-575** serum CMP. Its metadata was inspected, its licence status recorded (none stated, so it is not redistributed), and the file pinned by SHA-256. It is used for a descriptive pre-flight vs post-flight comparison; see `docs/OSDR-OSD575-DATA.md`.
+> - The DATA-1 gate is now met for **one** dataset only: NASA OSDR **OSD-575** serum CMP. Its metadata was inspected, its licence status recorded (none stated, so **neither the raw CSV nor any derived OSD-575 measurements are tracked in git** — only the provenance manifest), and the file pinned by SHA-256. It is used for a descriptive pre-flight vs post-flight comparison; see `docs/OSDR-OSD575-DATA.md`. The tracked derived outputs under `experiments/m6/outputs/` come from the openly licensed PhysioNet dataset, not from OSDR (`docs/DATA-SOURCE-INVENTORY.md` §3c).
 > - OSD-570 and OSD-571 were checked and are **not** telemetry. WESAD is terrestrial lab data and is not used.
 > - Everything else under DATA-1, CLIN-1, HW-1, INT-1, SEC-1 and QUAL-1 (federated learning, ledger, clinical workflows, ultrasound, sensors) remains **not implemented**.
 

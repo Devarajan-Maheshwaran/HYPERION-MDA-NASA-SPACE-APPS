@@ -49,7 +49,7 @@ The simulated and FL modules import nothing from the NASA pipeline, and the reve
 - *Imports:* M6 imports `hyperion_mda` modules read-only. Nothing in `src/` imports M6.
 - *Separation:* results are never shown in the app or fed into the NASA lane.
 
-**Stack:** Python standard library and Tkinter for the core app. numpy and scipy only for the M5 HR methods check and the M6 experiment, in an isolated `.venv`. Network access exists only in the two explicit fetch commands (`osdr_fetch`, `physionet_fetch`). Tests use `unittest`: 173 in `tests/` and 27 in `experiments/m6/tests/`.
+**Stack:** Python standard library and Tkinter for the core app. numpy and scipy only for the M5 HR methods check and the M6 experiment, in an isolated `.venv`. Network access exists only in the two explicit fetch commands (`osdr_fetch`, `physionet_fetch`). Tests use `unittest`: 185 in `tests/` and 28 in `experiments/m6/tests/` (counts computed by `python scripts/report_counts.py`; collected counts, not executed counts).
 
 ## 2. MVP target architecture (the signal registry and channel panel exist as of M2; everything else below is planned)
 

@@ -25,7 +25,7 @@ Retrieved and verified 2026-11-14. The machine-readable record is `src/hyperion_
 - The OSD-575 study metadata **states no licence**.
 - The OSDR terms page says *"These data are provided under NASA's open access policy"* and *"Users are responsible for knowing their rights to distribute information."*
 - NASA's science-data licence page applies CC0 to *"NASA-led mission data"*. Inspiration4 was a private mission, and for other data that page says *"the data are provided as is."*
-- **Conclusion:** redistribution rights are not confirmed. This project **does not bundle the CSV**. Users download it from OSDR with `python -m hyperion_mda.osdr_fetch`.
+- **Conclusion:** redistribution rights are not confirmed. This project **does not bundle the CSV**, and tracks **no derived OSD-575 measurements** either. What *is* in git is `src/hyperion_mda/data/osdr/OSD-575.provenance.json` — URL, size, SHA-256, licence status and citation, i.e. metadata, not values. Users download the CSV from OSDR with `python -m hyperion_mda.osdr_fetch`. (The tracked derived outputs under `experiments/m6/outputs/` come from the openly licensed PhysioNet dataset, not from OSDR; see `docs/DATA-SOURCE-INVENTORY.md` §3c.)
 
 ## File contents (as verified)
 
@@ -50,9 +50,11 @@ Retrieved and verified 2026-11-14. The machine-readable record is `src/hyperion_
 | `SUBJECT_ID` | Subject |
 | `VALUE` | Numeric value. `NA` is kept as a visible missing value; it is never imputed and never scored. |
 | `timepoint` | Mission-relative order only. `L-n` = pre-flight baseline; `R+n` = post-flight observation. No dates are created. |
-| `TEST_TYPE` | Checked to equal `CMP`; any other value is flagged |
+| `TEST_TYPE` | Checked to equal `CMP`; any other value is flagged **and excluded from scoring** (see below) |
 | `SEX` | **Not used** and not displayed |
 | `RANGE_MIN`, `RANGE_MAX` | **Not used.** The laboratory's reference ranges are not used as thresholds and are not shown. |
+
+**`rejection_reason` vs `flags` (R1).** These are two different things. `flags` is a list of **display warnings** shown in the row's "Row warnings" column — a missing `NA`, an unsupported analyte/unit pair, an unexpected `TEST_TYPE`. A flag on its own never removes a row from scoring. `rejection_reason` is a separate, **source-assigned** field: the adapter sets it only when it cannot vouch for the row at all (today, `TEST_TYPE` ≠ `CMP`, reason `"wrong assay type"`). A row with a `rejection_reason` is **never a baseline and never a scored observation**, its z-score is left empty, and the reason appears in the score-basis note ("Baseline reading excluded; not scored: wrong assay type" / "Row kept visible; not scored: wrong assay type"). The row itself stays visible — nothing is dropped or hidden. The engine reads `rejection_reason` directly; it never infers rejection from the flag text, so rewording a warning cannot change what gets scored. In the real OSD-575 file every row is `CMP`, so no row is rejected and no result changes; the rule matters if a different panel (for example the OSD-569 CBC candidate) or an edited file is ever loaded through this adapter.
 
 **The comparison.** Each post-flight value is compared with the same subject's pre-flight values for the same analyte and unit: z = (value − pre-flight mean) / pre-flight sample SD. It needs at least 2 numeric pre-flight values and a non-zero SD.
 

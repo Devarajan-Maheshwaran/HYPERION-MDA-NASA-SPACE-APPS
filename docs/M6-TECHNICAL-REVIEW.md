@@ -36,7 +36,7 @@ M5 added a **RECORDED-NON-ASTRONAUT** lane alongside the NASA lab-data lane and 
 **Data gate (GO):**
 - The licence (ODC-By 1.0) and documentation were verified on the owner's page.
 - All 59 files are SHA-256-verified against the owner's `SHA256SUMS.txt`, whose own hash is pinned in `src/hyperion_mda/data/physionet/wrist-1.0.0.provenance.json`.
-- The data is cached outside the repository and not redistributed.
+- The **raw recordings** are cached outside the repository and are not bundled. **Derived M6 outputs are tracked** in `experiments/m6/outputs/` (14 files: features, predictions, metrics, `results.json`, `report.md`), which ODC-By 1.0 permits with attribution. The exact tracked/not-tracked split is in `docs/DATA-SOURCE-INVENTORY.md` §3c.
 
 **Standard-library WFDB reader** (`wfdb_reader.py`, format 16 plus MIT annotations):
 - Every signal is checked against its header checksum.
@@ -75,7 +75,7 @@ run_m6.py ───── metrics (m6_metrics.py) → outputs/*.csv, results.jso
         │                                 → report.md (m6_report.py, from results.json only)
         │
 verify_m6.py    independent standard-library recomputation from the raw CSVs
-tests/test_m6.py  27 tests
+experiments/m6/tests/test_m6.py  28 tests (scripts/report_counts.py)
 ```
 
 **Dependencies:** numpy 2.5.4 and scipy 1.18.1 in the project `.venv`. Nothing was installed.
@@ -227,7 +227,7 @@ Two cautions:
   - accuracy and macro-F1, including the n/a folds
   - that the summary CSVs mirror `results.json`
   - that `report.md` is exactly the rendering of `results.json`
-- **Tests:** 27 M6 tests, including a full pipeline run into a temporary directory whose 14 output files are **byte-identical** to `experiments/m6/outputs/`. The 173 existing tests pass unchanged.
+- **Tests:** 27 M6 tests at the time of this run, including a full pipeline run into a temporary directory whose 14 output files are **byte-identical** to `experiments/m6/outputs/`. The 173 existing app tests passed unchanged. *(Historical counts. The suites now collect 28 M6 tests and 185 app tests; recompute with `python scripts/report_counts.py`.)*
 - **Provenance in `results.json`:**
   - config SHA-256, dataset-manifest SHA-256, git HEAD, and SHA-256 of every M6 and reused M5 source file
   - Python 3.14.2, numpy 2.5.4, scipy 1.18.1

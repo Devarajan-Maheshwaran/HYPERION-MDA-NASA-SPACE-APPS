@@ -93,7 +93,7 @@ A learned stage would be a separate milestone with its own approval.
 - **Real-data checks:** same windows as M6; the M6 A0, A1 and A2 values are reproduced exactly.
 - **Independent verifier:** extend the `verify_m6.py` pattern, recomputing every reported metric from the raw prediction CSVs with the standard library only.
 - **Reproducibility:** a full run is byte-identical across two runs.
-- **Regression:** all 173 `tests/` and 27 M6 tests stay passing, and M6 outputs stay byte-identical.
+- **Regression:** the whole `tests/` suite and the whole M6 suite stay passing (currently 185 and 28 collected — `python scripts/report_counts.py`), and M6 outputs stay byte-identical.
 
 ## 7. Expected outputs
 

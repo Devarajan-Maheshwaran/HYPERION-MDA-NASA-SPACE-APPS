@@ -30,7 +30,7 @@ Each phase ends at a gate. **Do not start the next phase until its gate passes.*
 
 ### Phase 1: data-access and provenance gate (WESAD)
 
-- Confirm WESAD's current terms of use from the dataset owner (the owner page has moved; inventory Q1). Record the exact wording and date in a manifest. **Never redistribute WESAD**; fetch it on demand, as with OSDR.
+- Confirm WESAD's current terms of use from the dataset owner (the owner page has moved; inventory Q1). Record the exact wording and date in a manifest. **Track neither raw nor derived WESAD data in git**; fetch it on demand, as with OSDR. (Nothing WESAD is currently downloaded or tracked; the gate is NO-GO.)
 - Download into a local cache **outside the repository**, and record the source URL, retrieval time, file sizes and SHA-256 in `wesad.provenance.json`.
 - Inspect read-only: verify the participant IDs present, the label codes, the sampling rates and the file formats against the official readme (Q2). Prefer the raw device files to the `.pkl` pickles; if pickles are unavoidable, load them only in an isolated subprocess after the checksum check.
 - **Gate 1:** terms confirmed in writing; checksums recorded; readme facts verified, with any discrepancy written up; no data in git or in any ZIP.

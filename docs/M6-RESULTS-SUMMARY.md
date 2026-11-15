@@ -121,7 +121,7 @@ B1 pooled confusion matrix (rows = true, columns = predicted):
 ## Verification
 
 - **Independent verifier:** `verify_m6.py` (standard library only) recomputes metrics from the raw per-window CSVs. 1187 checks passed and 0 failed. It also confirms `report.md` is exactly the rendering of `results.json`.
-- **Tests:** 27 M6 tests in `experiments/m6/tests/` cover leakage, the ECG guard, model and metric correctness, the frozen-A1 identity and byte-identical reproducibility. The 173 existing tests pass unchanged.
+- **Tests:** 27 M6 tests in `experiments/m6/tests/` covered leakage, the ECG guard, model and metric correctness, the frozen-A1 identity and byte-identical reproducibility, and the 173 existing app tests passed unchanged. *(Counts as at the M6 run on 2026-11-15. The suites now collect 28 M6 tests and 185 app tests — one M6 provenance test and the R1 assay-rejection tests were added since. Recompute with `python scripts/report_counts.py`.)*
 
 ## Reproduce
 

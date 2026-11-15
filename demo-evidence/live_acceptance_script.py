@@ -1,13 +1,41 @@
 """Final live acceptance: one continuous session of the real app under its Tk mainloop.
 Runs the 8 workflows, hooks Tk callback exceptions and dialogs, measures event-loop gaps
-(freeze detection), and scans every visible widget text for lane labels / clinical terms."""
+(freeze detection), and scans every visible widget text for lane labels / clinical terms.
+
+Run from anywhere:  python demo-evidence/live_acceptance_script.py
+The package is imported from this file's repository (repo root / "src"), so the script
+works from any checkout location on Windows, macOS and Linux. Tkinter and a display are
+required; without them the script exits with code 2 and an explicit message. The verified
+OSDR and PhysioNet caches must also be present (see docs/MENTOR-DEMO-GUIDE.md).
+"""
 import re
 import sys
 import time
 import traceback
+from pathlib import Path
 
-sys.path.insert(0, r"C:\NASA SPACE APP CHALLENGE\src")
-from hyperion_mda import app  # noqa: E402
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+try:
+    from hyperion_mda import app  # noqa: E402
+except ImportError as exc:  # pragma: no cover - environment guard, not application logic
+    missing = getattr(exc, "name", "") or ""
+    lines = [f"Live acceptance cannot start: {exc}",
+             f"  interpreter:  {sys.executable}",
+             f"  package path: {REPO_ROOT / 'src'}"]
+    if "tkinter" in missing or "_tkinter" in missing:
+        lines += ["Tkinter is not available in this interpreter. Install Tk support and run on a",
+                  "desktop session, then retry:",
+                  "  Windows/macOS: use a python.org build (includes Tcl/Tk), or the project .venv",
+                  "  Debian/Ubuntu: sudo apt-get install python3-tk",
+                  "  headless Linux: a display is still required, for example",
+                  "    xvfb-run -a python demo-evidence/live_acceptance_script.py"]
+    else:
+        lines += [f"Install the missing module {missing!r} in this interpreter, or run the script",
+                  "with the project .venv (see docs/MENTOR-DEMO-GUIDE.md)."]
+    lines += ["No workflows were run. This is an environment limitation, not a test failure."]
+    print("\n".join(lines), file=sys.stderr)
+    raise SystemExit(2)
 
 LOG, dialogs, cb_errors = [], [], []
 app.messagebox.showerror = lambda t, m, **k: dialogs.append(("ERROR", t, m))
