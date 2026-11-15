@@ -53,6 +53,37 @@ def _parse(data: Any) -> dict[str, Any]:
     return {"sample_count": len(data), "channels": channels}
 
 
+FLUX_UNIT = "pfu"
+FLUX_UNIT_LONG = "particles / (cm^2 * s * sr)"
+DOSE_NOTE = ("GOES integral proton flux is an environmental space-weather indicator in pfu, "
+             "NOT absorbed tissue dose in mGy/day. No flux-to-dose conversion is performed; "
+             "that would require a validated radiation-transport model.")
+
+
+def summary(fetch: bool = False) -> dict[str, Any]:
+    """Availability + true units + cache age, for the cockpit context strip (P0-4)."""
+    import time
+
+    state = load(fetch=fetch)
+    path = cached_path()
+    age_s = None
+    if path is not None:
+        try:
+            age_s = max(0.0, round(time.time() - path.stat().st_mtime, 1))
+        except OSError:
+            age_s = None
+    channels = state.get("channels") or {}
+    latest = None
+    for energy, row in channels.items():
+        stamp = row.get("time_tag")
+        if stamp and (latest is None or str(stamp) > str(latest.get("time_tag", ""))):
+            latest = {"energy": energy, **row}
+    return {**state, "unit": FLUX_UNIT, "unit_long": FLUX_UNIT_LONG,
+            "cache_age_s": age_s, "latest_sample": latest,
+            "channel_count": len(channels), "dose_note": DOSE_NOTE,
+            "quantity": "integral proton flux (environmental indicator, not tissue dose)"}
+
+
 def load(fetch: bool = False, timeout_s: float = 3.0) -> dict[str, Any]:
     """Return availability + parsed channels. Network is attempted only when fetch=True."""
     path = cached_path()

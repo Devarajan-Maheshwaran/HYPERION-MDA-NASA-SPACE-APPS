@@ -11,3 +11,9 @@ node_modules/
 web/dist/
 .vite/
 *.local
+
+# Runtime state: the durable SQLite case store and its WAL sidecars are local, not source.
+var/
+*.db
+*.db-wal
+*.db-shm

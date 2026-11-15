@@ -106,6 +106,8 @@ class OrganReading(BaseModel):
     hazard: str = ""
     staleness_tau: float | None = None
     age_hours: float | None = None
+    tau_basis: str = "wall-clock hours"
+    mission_age_s: float | None = None
     z_score: float | None = None
     baseline_note: str = "No personal baseline for this indicator; z_t not available."
     action: str = ""
@@ -122,6 +124,9 @@ class ManualCheck(BaseModel):
     recorded_at: str = ""
     lane: Lane = "INJECTED"
     source: str = "crew entry (demo-grade, unverified)"
+    # Mission-clock stamp for the live cockpit's compressed staleness demo. None on the
+    # legacy/manual path, which keeps using wall-clock age exactly as before.
+    mission_t_s: float | None = None
 
 
 class Alert(BaseModel):

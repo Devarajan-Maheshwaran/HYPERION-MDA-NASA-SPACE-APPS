@@ -1,0 +1,835 @@
+{
+  "accuracy": {
+    "dp_accountant_example": {
+      "accountant": "exact integer-order SGM RDP, log-space binomial sum; composed by summing RDP over steps; converted with eps = rdp + log(1/delta)/(alpha-1)",
+      "accounted_steps": 500,
+      "best_order": 12,
+      "clip_norm": 1.0,
+      "delta": 1e-05,
+      "epsilon": 2.1246,
+      "level": "WINDOW",
+      "mechanism": "Poisson-subsampled Gaussian (per-window clip + additive Gaussian noise)",
+      "neighbouring_dataset": "one 8 s window added or removed from one client",
+      "noise_multiplier": 8.0,
+      "rdp_at_best_order": 1.07794,
+      "sampling_rate_q": 0.149533
+    },
+    "folds": [
+      {
+        "client_window_counts": [
+          567,
+          714,
+          738,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 14.8943,
+        "held_out": "s1",
+        "local_only_silo_maes": [
+          24.4503,
+          33.5906,
+          33.6476,
+          22.4449
+        ],
+        "mae_bpm": {
+          "centralized": 31.0605,
+          "dp_sgd_fl": 29.493,
+          "fedavg": 29.2791,
+          "local_only": 28.5333,
+          "mean_baseline": 28.8196
+        },
+        "n_test_windows": 868,
+        "n_train_windows": 2464,
+        "train_target_sd_bpm": 23.024361
+      },
+      {
+        "client_window_counts": [
+          868,
+          714,
+          738,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 18.2905,
+        "held_out": "s2",
+        "local_only_silo_maes": [
+          23.0092,
+          22.0433,
+          17.7617,
+          25.2576
+        ],
+        "mae_bpm": {
+          "centralized": 31.0806,
+          "dp_sgd_fl": 15.7795,
+          "fedavg": 16.799,
+          "local_only": 22.018,
+          "mean_baseline": 14.5489
+        },
+        "n_test_windows": 567,
+        "n_train_windows": 2765,
+        "train_target_sd_bpm": 26.820763
+      },
+      {
+        "client_window_counts": [
+          1435,
+          143,
+          738,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 18.8859,
+        "held_out": "s3",
+        "local_only_silo_maes": [
+          15.7805,
+          21.8628,
+          8.9116,
+          22.4255
+        ],
+        "mae_bpm": {
+          "centralized": 15.3949,
+          "dp_sgd_fl": 12.6059,
+          "fedavg": 11.3609,
+          "local_only": 17.2451,
+          "mean_baseline": 12.4053
+        },
+        "n_test_windows": 571,
+        "n_train_windows": 2761,
+        "train_target_sd_bpm": 26.919757
+      },
+      {
+        "client_window_counts": [
+          1435,
+          571,
+          738,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 14.8766,
+        "held_out": "s4",
+        "local_only_silo_maes": [
+          91.8813,
+          78.989,
+          70.9681,
+          86.2282
+        ],
+        "mae_bpm": {
+          "centralized": 73.027,
+          "dp_sgd_fl": 69.6969,
+          "fedavg": 74.1148,
+          "local_only": 82.0166,
+          "mean_baseline": 76.607
+        },
+        "n_test_windows": 143,
+        "n_train_windows": 3189,
+        "train_target_sd_bpm": 20.383001
+      },
+      {
+        "client_window_counts": [
+          1435,
+          714,
+          450,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 16.1168,
+        "held_out": "s5",
+        "local_only_silo_maes": [
+          50.6806,
+          12.3921,
+          19.832,
+          33.8386
+        ],
+        "mae_bpm": {
+          "centralized": 40.4098,
+          "dp_sgd_fl": 33.5161,
+          "fedavg": 30.4544,
+          "local_only": 29.1858,
+          "mean_baseline": 25.3981
+        },
+        "n_test_windows": 288,
+        "n_train_windows": 3044,
+        "train_target_sd_bpm": 25.35657
+      },
+      {
+        "client_window_counts": [
+          1435,
+          714,
+          288,
+          445
+        ],
+        "fedavg_final_train_mae_bpm": 18.3422,
+        "held_out": "s6",
+        "local_only_silo_maes": [
+          11.625,
+          13.6973,
+          15.3494,
+          10.449
+        ],
+        "mae_bpm": {
+          "centralized": 13.8174,
+          "dp_sgd_fl": 12.7189,
+          "fedavg": 10.4502,
+          "local_only": 12.7802,
+          "mean_baseline": 9.8594
+        },
+        "n_test_windows": 450,
+        "n_train_windows": 2882,
+        "train_target_sd_bpm": 26.83738
+      },
+      {
+        "client_window_counts": [
+          1435,
+          714,
+          738,
+          107
+        ],
+        "fedavg_final_train_mae_bpm": 16.3856,
+        "held_out": "s8",
+        "local_only_silo_maes": [
+          17.4037,
+          38.8192,
+          22.0717,
+          25.0251
+        ],
+        "mae_bpm": {
+          "centralized": 34.4209,
+          "dp_sgd_fl": 21.077,
+          "fedavg": 27.9287,
+          "local_only": 25.8299,
+          "mean_baseline": 23.588
+        },
+        "n_test_windows": 338,
+        "n_train_windows": 2994,
+        "train_target_sd_bpm": 25.468428
+      },
+      {
+        "client_window_counts": [
+          1435,
+          714,
+          738,
+          338
+        ],
+        "fedavg_final_train_mae_bpm": 17.6454,
+        "held_out": "s9",
+        "local_only_silo_maes": [
+          20.1308,
+          6.9839,
+          7.3717,
+          30.7967
+        ],
+        "mae_bpm": {
+          "centralized": 20.1149,
+          "dp_sgd_fl": 7.5291,
+          "fedavg": 5.7477,
+          "local_only": 16.3208,
+          "mean_baseline": 2.1916
+        },
+        "n_test_windows": 107,
+        "n_train_windows": 3225,
+        "train_target_sd_bpm": 25.696594
+      }
+    ],
+    "frozen_m6_cross_check": {
+      "expected_mae_bpm": 24.177234,
+      "matches": true,
+      "measured_mae_bpm": 24.177234,
+      "reference": "experiments/m6/outputs/results.json hr.primary.models.A0"
+    },
+    "n_features": 41,
+    "participant_order": [
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s8",
+      "s9"
+    ],
+    "per_participant_mae_bpm": {
+      "centralized": [
+        31.060541,
+        31.080633,
+        15.394855,
+        73.027018,
+        40.409755,
+        13.817407,
+        34.420855,
+        20.114861
+      ],
+      "dp_sgd_fl": [
+        29.493015,
+        15.779529,
+        12.605883,
+        69.696944,
+        33.516102,
+        12.718854,
+        21.076955,
+        7.529122
+      ],
+      "fedavg": [
+        29.279109,
+        16.798981,
+        11.360896,
+        74.114792,
+        30.454353,
+        10.450237,
+        27.928741,
+        5.747688
+      ],
+      "local_only": [
+        28.533328,
+        22.017953,
+        17.245096,
+        82.016639,
+        29.185822,
+        12.780163,
+        25.829944,
+        16.320791
+      ],
+      "mean_baseline": [
+        28.81956,
+        14.548941,
+        12.405346,
+        76.606953,
+        25.398051,
+        9.859426,
+        23.587985,
+        2.191613
+      ]
+    },
+    "table": [
+      {
+        "label": "Training-mean baseline (learns nothing; the honesty control)",
+        "mae_bpm": {
+          "ci_high": 41.1694,
+          "ci_low": 12.0026,
+          "gap_vs_centralized_bpm": -8.2385,
+          "mean": 24.1772,
+          "median": 19.0685,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 22.9655,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "regime": "mean_baseline"
+      },
+      {
+        "label": "Local-only (mean of 4 participant-group silos)",
+        "mae_bpm": {
+          "ci_high": 45.6312,
+          "ci_low": 18.6406,
+          "gap_vs_centralized_bpm": -3.1745,
+          "mean": 29.2412,
+          "median": 23.9239,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 22.1404,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "regime": "local_only"
+      },
+      {
+        "label": "Centralized (pooled training participants)",
+        "mae_bpm": {
+          "ci_high": 46.1046,
+          "ci_low": 21.6994,
+          "gap_vs_centralized_bpm": -0.0,
+          "mean": 32.4157,
+          "median": 31.0706,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 18.9275,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "regime": "centralized"
+      },
+      {
+        "label": "FedAvg (4 participant-group clients, C=1.0, 20 rounds)",
+        "mae_bpm": {
+          "ci_high": 41.646,
+          "ci_low": 13.9538,
+          "gap_vs_centralized_bpm": -6.6489,
+          "mean": 25.7668,
+          "median": 22.3639,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 21.7118,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "regime": "fedavg"
+      },
+      {
+        "label": "DP-SGD FL (clip C=1.0, sigma=8.0)",
+        "mae_bpm": {
+          "ci_high": 39.8127,
+          "ci_low": 14.4995,
+          "gap_vs_centralized_bpm": -7.1136,
+          "mean": 25.3021,
+          "median": 18.4282,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 19.9996,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "regime": "dp_sgd_fl",
+        "window_level_epsilon": {
+          "delta": 1e-05,
+          "max_over_folds": 2.1246,
+          "min_over_folds": 0.4956,
+          "note": "epsilon for the smallest client in each fold; a window in a larger client has a smaller q and therefore a smaller epsilon. The reported max is the conservative worst case over folds and clients."
+        }
+      }
+    ]
+  },
+  "config": {
+    "batch_size": 16,
+    "client_fraction": 1.0,
+    "clip_norm": 1.0,
+    "delta": 1e-05,
+    "dp_sigma_sweep": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0
+    ],
+    "fault_scale": 20.0,
+    "fault_seeds": [
+      11,
+      22,
+      33,
+      44,
+      55
+    ],
+    "l2": 0.001,
+    "learning_rate": 0.02,
+    "local_steps": 25,
+    "n_clients": 4,
+    "noise_multiplier": 8.0,
+    "rdp_orders": [
+      2,
+      128
+    ],
+    "rdp_orders_note": "every integer order in the inclusive range",
+    "rounds": 20
+  },
+  "dataset": {
+    "client_grouping_note": "clients are participant groups, so no participant is split across clients and no client holds the held-out participant",
+    "client_groups": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s5",
+        "s6"
+      ],
+      [
+        "s8",
+        "s9"
+      ]
+    ],
+    "n_features": 41,
+    "n_windows": 3332,
+    "participants": [
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s8",
+      "s9"
+    ],
+    "splits": "leave-one-participant-out, 8 folds, no random splitting",
+    "windows_per_participant": {
+      "s1": 868,
+      "s2": 567,
+      "s3": 571,
+      "s4": 143,
+      "s5": 288,
+      "s6": 450,
+      "s8": 338,
+      "s9": 107
+    }
+  },
+  "dp_privacy_utility": {
+    "note": "identical rounds, steps, clipping and splits; only the Gaussian noise multiplier changes. Epsilon is window-level at delta=1e-5, worst case over folds and clients. Participant-level privacy is NOT provided.",
+    "sweep": [
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": false,
+        "mae_bpm": {
+          "ci_high": 41.9821,
+          "ci_low": 13.6107,
+          "mean": 25.4453,
+          "median": 19.7892,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 22.4943,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 1.0,
+        "window_level_epsilon_best_case": 6.562,
+        "window_level_epsilon_worst_case": 30.3635
+      },
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": false,
+        "mae_bpm": {
+          "ci_high": 41.6906,
+          "ci_low": 13.7508,
+          "mean": 25.4301,
+          "median": 19.6021,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 22.1445,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 2.0,
+        "window_level_epsilon_best_case": 2.2732,
+        "window_level_epsilon_worst_case": 10.692
+      },
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": false,
+        "mae_bpm": {
+          "ci_high": 41.0852,
+          "ci_low": 13.9489,
+          "mean": 25.3789,
+          "median": 19.1994,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 21.4298,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 4.0,
+        "window_level_epsilon_best_case": 1.0272,
+        "window_level_epsilon_worst_case": 4.539
+      },
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": true,
+        "mae_bpm": {
+          "ci_high": 39.8127,
+          "ci_low": 14.4995,
+          "mean": 25.3021,
+          "median": 18.4282,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 19.9996,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 8.0,
+        "window_level_epsilon_best_case": 0.4956,
+        "window_level_epsilon_worst_case": 2.1246
+      },
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": false,
+        "mae_bpm": {
+          "ci_high": 38.1095,
+          "ci_low": 15.7037,
+          "mean": 25.745,
+          "median": 19.1913,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 17.3235,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 16.0,
+        "window_level_epsilon_best_case": 0.2442,
+        "window_level_epsilon_worst_case": 1.0315
+      },
+      {
+        "clip_norm": 1.0,
+        "delta": 1e-05,
+        "is_default_operating_point": false,
+        "mae_bpm": {
+          "ci_high": 37.2221,
+          "ci_low": 19.4849,
+          "mean": 28.0957,
+          "median": 28.1686,
+          "n_participants": 8,
+          "percentiles": [
+            2.5,
+            97.5
+          ],
+          "resamples": 10000,
+          "sd": 13.9013,
+          "seed": 20261115,
+          "unit": "participant"
+        },
+        "noise_multiplier": 32.0,
+        "window_level_epsilon_best_case": 0.1312,
+        "window_level_epsilon_worst_case": 0.5084
+      }
+    ]
+  },
+  "limitations": [
+    "Flower and Opacus are not used: torch/flwr/opacus are not installable in this environment (CUDA wheel size, fastapi pin conflict). The regimes and the RDP accountant are implemented directly in numpy/scipy and are measured, not quoted.",
+    "n=8 participants from one public exercise dataset; participant bootstrap CIs are wide and cannot support a clinical or spaceflight claim.",
+    "IMPORTANT: every regime lands close to the training-mean baseline. The frozen M6 run found the same thing (ridge A4 32.22 bpm vs the 24.18 bpm mean baseline), so these 41 features do not generalise across participants. The near-zero measured DP cost is a consequence of no regime learning much, NOT evidence that strong privacy is free here.",
+    "the linear model is deliberately simple so all four regimes share one step budget; this is a training-regime comparison, not a state-of-the-art HR model.",
+    "DP noise is applied per client per step with a fixed denominator; epsilon is composed over rounds x local_steps for the smallest client (worst case)."
+  ],
+  "model": "linear least squares trained by minibatch SGD (identical model and step budget in all four regimes, so the comparison isolates the training regime)",
+  "preprocessing": "features z-scored and target standardised using TRAIN-participant statistics only, per fold; predictions converted back to bpm before scoring. The DP clip norm C=1.0 therefore acts on a comparable scale in every fold. These statistics are not DP-protected.",
+  "provenance": {
+    "determinism": "fixed seeds, no wall-clock or host-dependent values; re-running reproduces this file byte for byte",
+    "features_csv": "experiments/m6/outputs/features.csv",
+    "features_sha256": "3c5750e730f09dd507550939381bf161f9233fc68a58d686f2d32c07a4fd241f",
+    "git_head": "f223da33c8d37d6a558ca08d63221f5c76eb8b5b",
+    "m6_config_sha256": "da9f28ac718d7324d61fa9f106efcbcf1c63c9d942b57b9f2a0156db3e72b084",
+    "numpy": "2.4.6",
+    "python": "3.11.2",
+    "reproduce": "python3 scripts/run_fl_dp_benchmark.py",
+    "scipy": "1.17.1",
+    "script": "scripts/run_fl_dp_benchmark.py",
+    "script_sha256": "241c2ee78284dd726be990b4256ff5727448d9bc1be98b75de8e6fbbe199242a",
+    "verify": "python3 scripts/run_fl_dp_benchmark.py --verify",
+    "windows_csv": "experiments/m6/outputs/windows.csv",
+    "windows_sha256": "c0ef7721092c6e71d6c335eec4550e539e574f33922f01a6f408ef8d22946aa2"
+  },
+  "robustness": {
+    "aggregator_definition": "cosine-screened coordinate-wise median: score each client update by median cosine similarity to the others, drop the lowest-scoring f=1 of n=4, then coordinate-wise median",
+    "comparison": [
+      {
+        "cosine_median_mae_bpm": 24.3603,
+        "fault": "sign_flip",
+        "fedavg_mae_bpm": 23.043,
+        "finding": "the robust aggregator was NOT better on this fault: with f=1 of n=4 a sign flip partly cancels in the mean, while the median discards a whole honest client. Reported as measured.",
+        "improvement_bpm": -1.3173,
+        "improvement_pct": -5.72
+      },
+      {
+        "cosine_median_mae_bpm": 28.9174,
+        "fault": "scale",
+        "fedavg_mae_bpm": null,
+        "finding": "plain FedAvg averaging diverged under this fault in every seed; the cosine-screened median stayed finite. No numeric MAE difference is quoted because one side has no finite MAE.",
+        "improvement_bpm": null,
+        "improvement_pct": null
+      }
+    ],
+    "note": "one faulty client of four, injected in every round; 5 seeds; the same LOPO folds and step budget as the accuracy table",
+    "runs": [
+      {
+        "aggregator": "mean",
+        "diverged_seeds": 0,
+        "divergence_threshold_bpm": 1000.0,
+        "fault": "sign_flip",
+        "fault_client_index": 0,
+        "fault_magnitude": null,
+        "mae_bpm_max": 23.458,
+        "mae_bpm_mean_over_seeds": 23.043,
+        "mae_bpm_min": 22.597,
+        "mae_bpm_sd_over_seeds": 0.3894,
+        "mean_clients_dropped_per_round": 0.0,
+        "n_seeds": 5,
+        "outcome": "CONVERGED",
+        "per_seed_mae_bpm": [
+          22.597,
+          23.458,
+          22.6894,
+          23.3702,
+          23.1003
+        ],
+        "raw_per_seed_mae_bpm": [
+          22.597,
+          23.458,
+          22.6894,
+          23.3702,
+          23.1003
+        ],
+        "seeds": [
+          11,
+          22,
+          33,
+          44,
+          55
+        ]
+      },
+      {
+        "aggregator": "cosine_median",
+        "diverged_seeds": 0,
+        "divergence_threshold_bpm": 1000.0,
+        "fault": "sign_flip",
+        "fault_client_index": 0,
+        "fault_magnitude": null,
+        "mae_bpm_max": 24.6626,
+        "mae_bpm_mean_over_seeds": 24.3603,
+        "mae_bpm_min": 23.8107,
+        "mae_bpm_sd_over_seeds": 0.3701,
+        "mean_clients_dropped_per_round": 1.0,
+        "n_seeds": 5,
+        "outcome": "CONVERGED",
+        "per_seed_mae_bpm": [
+          23.8107,
+          24.5604,
+          24.1459,
+          24.6626,
+          24.6219
+        ],
+        "raw_per_seed_mae_bpm": [
+          23.8107,
+          24.5604,
+          24.1459,
+          24.6626,
+          24.6219
+        ],
+        "seeds": [
+          11,
+          22,
+          33,
+          44,
+          55
+        ]
+      },
+      {
+        "aggregator": "mean",
+        "diverged_seeds": 5,
+        "divergence_threshold_bpm": 1000.0,
+        "fault": "scale",
+        "fault_client_index": 0,
+        "fault_magnitude": 20.0,
+        "mae_bpm_max": null,
+        "mae_bpm_mean_over_seeds": null,
+        "mae_bpm_min": null,
+        "mae_bpm_sd_over_seeds": null,
+        "mean_clients_dropped_per_round": 0.0,
+        "n_seeds": 5,
+        "outcome": "DIVERGED",
+        "per_seed_mae_bpm": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "raw_per_seed_mae_bpm": [
+          1.94268e+20,
+          1.79526e+20,
+          1.69356e+20,
+          1.76364e+20,
+          1.85332e+20
+        ],
+        "seeds": [
+          11,
+          22,
+          33,
+          44,
+          55
+        ]
+      },
+      {
+        "aggregator": "cosine_median",
+        "diverged_seeds": 0,
+        "divergence_threshold_bpm": 1000.0,
+        "fault": "scale",
+        "fault_client_index": 0,
+        "fault_magnitude": 20.0,
+        "mae_bpm_max": 32.1898,
+        "mae_bpm_mean_over_seeds": 28.9174,
+        "mae_bpm_min": 26.9071,
+        "mae_bpm_sd_over_seeds": 2.3393,
+        "mean_clients_dropped_per_round": 1.0,
+        "n_seeds": 5,
+        "outcome": "CONVERGED",
+        "per_seed_mae_bpm": [
+          27.1771,
+          30.5703,
+          26.9071,
+          27.7428,
+          32.1898
+        ],
+        "raw_per_seed_mae_bpm": [
+          27.1771,
+          30.5703,
+          26.9071,
+          27.7428,
+          32.1898
+        ],
+        "seeds": [
+          11,
+          22,
+          33,
+          44,
+          55
+        ]
+      }
+    ]
+  },
+  "scope": "RECORDED-NON-ASTRONAUT methods demonstration. Not astronaut data, not clinical, not validated, no spaceflight accuracy claim.",
+  "stability": "learning_rate=0.02 was verified stable on all 8 folds and all 4 silos; a non-finite metric raises instead of being written to the artifact",
+  "task": "predict annotation-derived reference HR (bpm) from 41 frozen wrist PPG + accelerometer features, 8 s windows",
+  "threat_model": {
+    "delta": 1e-05,
+    "guarantee_covers": "the client-side clipped/noised SGD steps only",
+    "level": "WINDOW",
+    "neighbouring_dataset": "one 8 s window added or removed from one client",
+    "not_covered": [
+      "PARTICIPANT-LEVEL privacy: a participant contributes 107-868 windows, so removing a participant is not bounded by the reported window-level epsilon. Group (per-participant) clipping is NOT implemented.",
+      "the train-only feature standardiser and target centring (non-private preprocessing statistics shared with the server)",
+      "secure aggregation: the server is honest-but-curious and sees each client's noisy update individually",
+      "the raw dataset itself, which is public PhysioNet data"
+    ],
+    "trust_assumption": "honest-but-curious server, up to f=1 faulty client in the robustness experiment only"
+  },
+  "title": "Federated / DP-SGD benchmark on frozen M6 participant-separated splits"
+}

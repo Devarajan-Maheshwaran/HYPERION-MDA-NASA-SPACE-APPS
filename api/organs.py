@@ -20,6 +20,12 @@ VALIDITY_HOURS = {
 }
 STALENESS_LAMBDA = 0.15  # tau = exp(-lambda * age_hours); demo decay constant
 
+# Live-cockpit time compression (P0-1). The mission clock advances 1 s per second, so a
+# wall-clock staleness demo would take hours to show anything. 60 mission seconds stand in
+# for one hour of evidence age. This is a DECLARED DEMO SCALE, not a clinical interval.
+MISSION_SECONDS_PER_DEMO_HOUR = 60.0
+MISSION_TAU_LABEL = ("mission clock, demo compression: 60 mission seconds = 1 hour of evidence age")
+
 SYSTEMS = (
     ("head-eyes", "Head & Eyes", "0g fluid shift + cabin CO2 (SANS)", "onsd", "mm",
      "ONSD >= 5.8 mm (deck claim)", 5.8, "ge"),
@@ -38,6 +44,22 @@ SYSTEMS = (
 
 def tau(age_hours: float) -> float:
     return math.exp(-STALENESS_LAMBDA * max(0.0, age_hours))
+
+
+def mission_age_s(check: ManualCheck, mission_now_s: float | None) -> float | None:
+    """Seconds of mission time since this exam, or None when the lane has no mission stamp."""
+    if mission_now_s is None or check.mission_t_s is None:
+        return None
+    return max(0.0, float(mission_now_s) - float(check.mission_t_s))
+
+
+def effective_age_hours(check: ManualCheck, now: datetime | None = None,
+                        mission_now_s: float | None = None) -> float | None:
+    """Mission-compressed age when a mission stamp exists, else the wall-clock age."""
+    age_s = mission_age_s(check, mission_now_s)
+    if age_s is not None:
+        return age_s / MISSION_SECONDS_PER_DEMO_HOUR
+    return age_hours(check, now)
 
 
 def age_hours(check: ManualCheck, now: datetime | None = None) -> float | None:
@@ -67,7 +89,8 @@ def _value_of(check: ManualCheck) -> float | None:
 
 
 def organ_readings(checks: list[ManualCheck], now: datetime | None = None,
-                   context: dict | None = None) -> list[OrganReading]:
+                   context: dict | None = None,
+                   mission_now_s: float | None = None) -> list[OrganReading]:
     """Demo rule table. ``context`` adds the workstation's labelled SIMULATED reference
     channels (CO2, proton dose, water, ARED) and the current gate-compensated HR. Without
     context the original single-indicator behaviour is preserved for the existing tests.
@@ -84,7 +107,9 @@ def organ_readings(checks: list[ManualCheck], now: datetime | None = None,
                 evidence="Not available — no crew entry for this indicator.",
             ))
             continue
-        age = age_hours(check, now)
+        age = effective_age_hours(check, now, mission_now_s)
+        m_age = mission_age_s(check, mission_now_s)
+        basis = MISSION_TAU_LABEL if m_age is not None else "wall-clock hours"
         value = _value_of(check)
         t = tau(age) if age is not None else None
         validity = VALIDITY_HOURS.get(kind, 4.0)
@@ -92,7 +117,8 @@ def organ_readings(checks: list[ManualCheck], now: datetime | None = None,
             readings.append(OrganReading(
                 system=system, label=label, status="UNKNOWN", indicator="Incomplete entry",
                 unit=unit, demo_threshold=threshold_text, hazard=hazard, staleness_tau=t,
-                age_hours=age, action=allowed(REPEAT_MEASUREMENT),
+                age_hours=age, tau_basis=basis, mission_age_s=m_age,
+                action=allowed(REPEAT_MEASUREMENT),
                 evidence="Entry missing a value or a timestamp; not scored.",
             ))
             continue
@@ -119,17 +145,19 @@ def organ_readings(checks: list[ManualCheck], now: datetime | None = None,
         readings.append(OrganReading(
             system=system, label=label, status=status, indicator=f"{kind} = {shown} {unit}",
             value=value, unit=unit, demo_threshold=threshold_text, hazard=hazard,
-            staleness_tau=t, age_hours=age, action=allowed(action),
+            staleness_tau=t, age_hours=age, tau_basis=basis, mission_age_s=m_age,
+            action=allowed(action),
             evidence=(f"Crew-entered {kind}, {age:.1f} h old, tau={t:.2f}. "
                       "Compared with a DEMO threshold, not a validated limit."),
         ))
     if context:
-        readings = _apply_workstation_context(readings, latest, context, now)
+        readings = _apply_workstation_context(readings, latest, context, now, mission_now_s)
     return readings
 
 
 def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, ManualCheck],
-                               context: dict, now: datetime | None) -> list[OrganReading]:
+                               context: dict, now: datetime | None,
+                               mission_now_s: float | None = None) -> list[OrganReading]:
     """Multi-signal demo rules from the cockpit directive. Every added channel is labelled.
     Never turns UNKNOWN/NOT_AVAILABLE green; a simulated reference channel can raise WATCH/
     ALERT but is explicitly marked SIMULATED in the evidence."""
@@ -155,10 +183,31 @@ def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, M
 
     co2 = context.get("co2_mmhg")
     if co2 is not None and co2 >= 4.0:
-        bump("head-eyes", "ALERT", f"Cabin CO2 = {co2:g} mmHg (SIMULATED)",
-             "SIMULATED cabin CO2 reference channel crossed the demo eye/CO2 rule. "
-             "Not a measured cabin sensor.", "ONSD >= 5.8 mm OR CO2 >= 4.0 mmHg (deck claim)",
-             float(co2), "mmHg")
+        # A fresh, normal ONSD downgrades the environmental CO2 finding to an onboard watch
+        # (S3). Stale, missing or elevated eye evidence keeps it at ALERT so the S2 hold and
+        # the S4 confirmation paths are unchanged.
+        onsd = latest.get("onsd")
+        onsd_age = effective_age_hours(onsd, now, mission_now_s) if onsd is not None else None
+        fresh_normal_eye = (onsd is not None and onsd.value is not None and onsd_age is not None
+                            and tau(onsd_age) >= 0.5 and onsd.value < 5.0)
+        measured_eye_breach = (onsd is not None and onsd.value is not None and onsd_age is not None
+                               and tau(onsd_age) >= 0.5 and onsd.value >= 5.8)
+        if measured_eye_breach:
+            # The crew just measured an elevated ONSD. Keep that measured value on the organ
+            # card instead of overwriting it with the simulated CO2 channel; note the CO2
+            # context in the evidence so both signals stay visible and honestly labelled.
+            eye = by_system["head-eyes"]
+            eye.evidence += (f" SIMULATED cabin CO2 = {co2:g} mmHg is also elevated "
+                             "(environmental context, not a measured cabin sensor).")
+            eye.action = allowed(CONTACT_FLIGHT_SURGEON)
+        else:
+            bump("head-eyes", "WATCH" if fresh_normal_eye else "ALERT",
+                 f"Cabin CO2 = {co2:g} mmHg (SIMULATED)",
+                 ("SIMULATED cabin CO2 is elevated, but a fresh normal ONSD is on file: environmental "
+                  "watch only, crew recheck. Not a measured cabin sensor." if fresh_normal_eye else
+                  "SIMULATED cabin CO2 reference channel crossed the demo eye/CO2 rule. "
+                  "Not a measured cabin sensor."),
+                 "ONSD >= 5.8 mm OR CO2 >= 4.0 mmHg (deck claim)", float(co2), "mmHg")
     proton = context.get("proton_mgy_day")
     if proton is not None and proton > 2.0:
         bump("chest-immune", "ALERT", f"Proton dose = {proton:g} mGy/day (SIMULATED)",
@@ -175,14 +224,14 @@ def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, M
              "BP >= 140/90 mmHg OR HR > 115 bpm (deck claim)", float(hr), "bpm")
     bp = latest.get("bp")
     if bp is not None and bp.diastolic is not None and bp.diastolic >= 90:
-        age = age_hours(bp, now)
+        age = effective_age_hours(bp, now, mission_now_s)
         if age is not None and age <= VALIDITY_HOURS["bp"]:
             bump("heart", "ALERT", f"BP = {bp.systolic:g}/{bp.diastolic:g} mmHg",
                  "Crew-entered diastolic pressure crossed the demo BP rule.",
                  "BP >= 140/90 mmHg OR HR > 115 bpm (deck claim)", bp.systolic, "mmHg")
     glucose = latest.get("glucose")
     if glucose is not None and glucose.value is not None:
-        age = age_hours(glucose, now)
+        age = effective_age_hours(glucose, now, mission_now_s)
         if age is not None and age <= VALIDITY_HOURS["glucose"] and 100 <= glucose.value < 126:
             bump("metabolic", "WATCH", f"Glucose = {glucose.value:g} mg/dL",
                  "Crew-entered glucose is in the demo impaired-fasting band (100–125 mg/dL).",
@@ -208,7 +257,7 @@ def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, M
         r.action = allowed(REST_AND_RECHECK if low else REPEAT_MEASUREMENT)
     sleep = latest.get("sleep")
     if sleep is not None and sleep.value is not None:
-        age = age_hours(sleep, now)
+        age = effective_age_hours(sleep, now, mission_now_s)
         if age is not None and age <= VALIDITY_HOURS["sleep"] and sleep.value < 4.5:
             bump("brain", "ALERT", f"Sleep = {sleep.value:g} h",
                  "Crew-entered sleep is below the demo brain/circadian rule.",
@@ -216,15 +265,17 @@ def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, M
     return readings
 
 
-def min_tau(checks: list[ManualCheck], now: datetime | None = None) -> float | None:
-    ages = [age_hours(c, now) for c in latest_by_kind(checks).values()]
+def min_tau(checks: list[ManualCheck], now: datetime | None = None,
+            mission_now_s: float | None = None) -> float | None:
+    ages = [effective_age_hours(c, now, mission_now_s) for c in latest_by_kind(checks).values()]
     known = [a for a in ages if a is not None]
     return min(tau(a) for a in known) if known else None
 
 
-def any_stale(checks: list[ManualCheck], now: datetime | None = None) -> bool:
+def any_stale(checks: list[ManualCheck], now: datetime | None = None,
+              mission_now_s: float | None = None) -> bool:
     for check in latest_by_kind(checks).values():
-        age = age_hours(check, now)
+        age = effective_age_hours(check, now, mission_now_s)
         if age is None or age > VALIDITY_HOURS.get(check.kind, 4.0):
             return True
     return False

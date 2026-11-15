@@ -111,6 +111,10 @@ class GateInput:
     hr_status: str = "UNKNOWN"
     co2_mmhg: float | None = None
     onsd_tau: float | None = None
+    # Recorded lane only: real window-quality metadata from the annotation file. When set,
+    # Gate 1 judges that basis instead of a waveform kurtosis/slew that this lane does not
+    # have. Default None keeps the simulated-lane truth table byte-identical.
+    recorded_quality: dict | None = None
 
 
 def gate1_sensor(inp: GateInput, cal: Calibration) -> GateVerdict:
@@ -123,6 +127,24 @@ def gate1_sensor(inp: GateInput, cal: Calibration) -> GateVerdict:
         "kurtosis_high": cal.kurtosis_high,
         "slew_high": cal.slew_high,
     }
+    if inp.recorded_quality is not None:
+        # RECORDED-NON-ASTRONAUT lane. The raw waveform is not in this repo, so no waveform
+        # statistic is invented; quality comes from the dataset's own RR-interval screen.
+        rq = dict(inp.recorded_quality)
+        evidence.update({"basis": "RECORDED_RR_SCREEN", "recorded_quality": rq})
+        if not rq.get("available"):
+            return GateVerdict(gate=1, outcome="UNKNOWN",
+                               reason="recorded window quality metadata unavailable", evidence=evidence)
+        if not cal.calibrated:
+            return GateVerdict(gate=1, outcome="UNKNOWN", reason=NOT_CALIBRATED, evidence=evidence)
+        if not rq.get("rr_screen_ok"):
+            return GateVerdict(gate=1, outcome="BLOCK",
+                               reason="recorded window failed the dataset RR-interval screen",
+                               evidence=evidence)
+        return GateVerdict(gate=1, outcome="PASS",
+                           reason="recorded window passed the dataset RR-interval screen "
+                                  "(annotation-derived, not a waveform SQI)",
+                           evidence=evidence)
     if not cal.calibrated:
         return GateVerdict(gate=1, outcome="UNKNOWN", reason=NOT_CALIBRATED, evidence=evidence)
     if inp.sqi.kurtosis is None or inp.sqi.slew is None:
@@ -211,18 +233,30 @@ def gate3_uncertainty(inp: GateInput, cal: Calibration, would_alert: bool) -> Ga
         "onsd_tau": inp.onsd_tau,
         "requested_exam": None,
     }
-    if not would_alert:
-        return GateVerdict(gate=3, outcome="PASS", reason="no rate alarm to hold",
-                           evidence=evidence)
     # A non-rate finding is never held for a manual check (S3).
     if inp.non_rate_flags:
         return GateVerdict(gate=3, outcome="PASS", reason="non-rate finding is not held",
                            evidence=evidence)
-    if (inp.co2_mmhg is not None and inp.co2_mmhg >= CO2_EYE_HOLD_MMHG
-            and inp.onsd_tau is not None and inp.onsd_tau < STALE_TAU_HOLD):
+    # S14: elevated cabin CO2 with a stale eye scan is an evidence gap in its own right, so
+    # it requests the ONSD exam even when the rate itself raises no alarm. Two hard bounds
+    # are preserved: a non-rate finding above, and the hard HR ceiling below, are never held.
+    at_ceiling = inp.hr_bpm is not None and inp.hr_bpm >= HARD_HR_CEILING_BPM
+    eye_evidence_stale = (inp.co2_mmhg is not None and inp.co2_mmhg >= CO2_EYE_HOLD_MMHG
+                          and inp.onsd_tau is not None and inp.onsd_tau < STALE_TAU_HOLD)
+    evidence["at_hard_ceiling"] = at_ceiling
+    evidence["eye_evidence_stale"] = eye_evidence_stale
+    if eye_evidence_stale and not at_ceiling:
         evidence["requested_exam"] = "ultrasound"
         return GateVerdict(gate=3, outcome="HOLD",
                            reason="cabin CO2 elevated and eye scan stale; request guided ONSD ultrasound",
+                           evidence=evidence)
+    if not would_alert:
+        return GateVerdict(gate=3, outcome="PASS", reason="no rate alarm to hold",
+                           evidence=evidence)
+    if at_ceiling:
+        # S4: the hard ceiling is never held for freshness, by either hold rule.
+        return GateVerdict(gate=3, outcome="PASS",
+                           reason="hard ceiling reached; freshness hold does not apply",
                            evidence=evidence)
     if inp.stale_manual and inp.min_tau is not None and inp.min_tau < STALE_TAU_HOLD:
         return GateVerdict(gate=3, outcome="HOLD",

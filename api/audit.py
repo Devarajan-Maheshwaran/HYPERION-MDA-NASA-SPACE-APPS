@@ -28,12 +28,21 @@ def digest(payload: dict[str, Any]) -> str:
 
 
 class AuditLog:
-    """In-memory chain with optional JSONL persistence."""
+    """In-memory chain with optional JSONL and SQLite persistence.
 
-    def __init__(self, path: Path | None = None) -> None:
+    The hashed payload is unchanged by the SQLite sink: `seq, ts, event, role, subject_id,
+    lane, detail, prev_sha256`. Case identity travels inside `detail`, so it is covered by
+    the hash. Tamper detection therefore behaves identically in both storage modes.
+    """
+
+    def __init__(self, path: Path | None = None, db: Any = None) -> None:
         self._entries: list[AuditEntry] = []
         self._lock = threading.Lock()
         self._path = path
+        self._db = db
+        if db is not None:
+            for row in db.load_audit():
+                self._entries.append(AuditEntry.model_validate(row))
         if path is not None and path.exists():
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -55,6 +64,8 @@ class AuditLog:
             }
             entry = AuditEntry(**payload, sha256=digest(payload))
             self._entries.append(entry)
+            if self._db is not None:
+                self._db.append_audit({**payload, "sha256": entry.sha256})
             if self._path is not None:
                 self._path.parent.mkdir(parents=True, exist_ok=True)
                 with self._path.open("a", encoding="utf-8", newline="\n") as fh:
@@ -85,5 +96,7 @@ class AuditLog:
     def clear(self) -> None:
         with self._lock:
             self._entries.clear()
+            if self._db is not None:
+                self._db.clear_audit()
             if self._path is not None and self._path.exists():
                 self._path.unlink()
