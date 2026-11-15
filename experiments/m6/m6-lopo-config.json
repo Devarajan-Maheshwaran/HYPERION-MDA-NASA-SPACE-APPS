@@ -1,0 +1,101 @@
+{
+  "config_version": "m6-lopo-1",
+  "protocol": "docs/M6-LOPO-PROTOCOL.md",
+  "frozen": "2026-11-15, before any M6 run. Any change requires a new config_version reported alongside this one.",
+  "scope": "RECORDED-NON-ASTRONAUT methods demonstration. Not astronaut data, not clinical, not validated.",
+  "dataset": {
+    "name": "PhysioNet Wrist PPG During Exercise",
+    "version": "1.0.0",
+    "doi": "10.13026/C2PQ1X",
+    "manifest": "src/hyperion_mda/data/physionet/wrist-1.0.0.provenance.json",
+    "expected_participants": ["s1", "s2", "s3", "s4", "s5", "s6", "s8", "s9"],
+    "expected_records": [
+      "s1_high_resistance_bike", "s1_low_resistance_bike", "s1_walk",
+      "s2_high_resistance_bike", "s2_low_resistance_bike", "s2_walk",
+      "s3_high_resistance_bike", "s3_low_resistance_bike", "s3_run", "s3_walk",
+      "s4_run", "s5_low_resistance_bike", "s5_run",
+      "s6_low_resistance_bike", "s6_run", "s6_walk",
+      "s8_run", "s8_walk", "s9_walk"
+    ]
+  },
+  "windows": {
+    "window_s": 8.0,
+    "step_s": 2.0,
+    "starts": "range(0, n_samples - window + 1, step), per record; windows never cross a record",
+    "time_base": "uniform 256 Hz sample index (wrist timestamp channel not used)"
+  },
+  "reference": {
+    "source": "annotation code 1 (hand-marked chest-ECG R peaks) from the .atr file; the ECG waveform is never loaded",
+    "definition": "60 / median RR of beats with start <= sample < start + window (identical to M5 dsp_hr)",
+    "min_beats": 3
+  },
+  "inputs": {
+    "allowed_signals": ["wrist_ppg", "wrist_low_noise_accelerometer_x", "wrist_low_noise_accelerometer_y", "wrist_low_noise_accelerometer_z"],
+    "never_inputs": ["chest_ecg", "sample_times_for_all_signals_apart_from_ecg", "ECG beat annotations", "reference HR"]
+  },
+  "ppg_preprocessing": "physical units (raw - baseline) / gain; Butterworth band-pass order 3, 0.5-4.0 Hz, sosfiltfilt over the whole record (identical to M5 dsp_hr)",
+  "spectrum": {
+    "segment_normalisation": "per-window: subtract mean, divide by SD (if SD > 0)",
+    "taper": "hann",
+    "nfft": 8192,
+    "resolution_hz": 0.03125
+  },
+  "ppg_features": {
+    "band_hz": [0.5, 4.0],
+    "bin_width_hz": 0.25,
+    "features": "14 relative band powers (power in bin / power in band) + dominant frequency in band (Hz) = 15"
+  },
+  "accel_features": {
+    "signal": "magnitude sqrt(x^2 + y^2 + z^2) of the low-noise accelerometer, per window",
+    "band_hz": [0.25, 5.0],
+    "bin_width_hz": 0.25,
+    "features": "19 relative band powers of the magnitude + dominant frequency (Hz) + 3 pairwise Pearson correlations (xy, xz, yz) + 3 log SD shares log(sd_axis / sqrt(sum sd^2)) = 26",
+    "no_raw_amplitude_features": true,
+    "zero_variance_rules": "correlation -> 0; SD share -> log(1/sqrt(3)); flat spectrum -> uniform relative powers and band-midpoint dominant frequency (counted as degenerate)"
+  },
+  "standardisation": "z-score fitted on training-participant rows only, per fold; zero SD replaced by 1",
+  "hr_models": {
+    "A0": {"type": "training_mean", "inputs": "none"},
+    "A1": {"type": "m5_dsp_hr_frozen", "inputs": "ppg", "note": "exact M5 peak-interval method; may decline windows"},
+    "A2": {"type": "spectral_peak", "inputs": "ppg", "definition": "60 x dominant frequency of the band-passed PPG spectrum in 0.5-4.0 Hz"},
+    "A3": {"type": "ridge", "alpha": 1.0, "inputs": "ppg_features"},
+    "A4": {"type": "ridge", "alpha": 1.0, "inputs": "ppg_features + accel_features"},
+    "A5": {"type": "ridge", "alpha": 1.0, "inputs": "accel_features", "role": "ablation: HR predictable from motion alone"}
+  },
+  "ridge": "closed form on standardised features; intercept = training mean of y, unpenalised",
+  "activity_models": {
+    "B0": {"type": "majority_class", "inputs": "none", "tie_break": "label-set order"},
+    "B1": {"type": "multinomial_logistic_l2", "C": 1.0, "inputs": "accel_features"},
+    "B2": {"type": "multinomial_logistic_l2", "C": 1.0, "inputs": "accel_features + ppg_features"}
+  },
+  "logistic": {
+    "objective": "C * sum(cross-entropy) + 0.5 * ||W||^2 (intercept unpenalised)",
+    "optimizer": "scipy.optimize.minimize L-BFGS-B, analytic gradient, zero initialisation",
+    "maxiter": 10000,
+    "gtol": 1e-05
+  },
+  "label_sets": {
+    "primary_3class": {"order": ["walk", "run", "cycle"], "map": {"walk": "walk", "run": "run", "low_resistance_bike": "cycle", "high_resistance_bike": "cycle"}},
+    "secondary_4class": {"order": ["walk", "run", "low_bike", "high_bike"], "map": {"walk": "walk", "run": "run", "low_resistance_bike": "low_bike", "high_resistance_bike": "high_bike"}}
+  },
+  "activity_windows": "all windows (reference beats not required)",
+  "record_level_vote": "majority of window predictions; ties broken by label-set order",
+  "folds": "leave-one-participant-out over sorted participant IDs; no random splitting at any level",
+  "hyperparameters": "fixed (protocol option 1); no tuning, no inner loop",
+  "bootstrap": {"unit": "participant", "resamples": 10000, "seed": 20261115, "percentiles": [2.5, 97.5], "paired": "the same resample indices are used for every model and every difference"},
+  "rounding": "predictions and references rounded to 6 decimals before scoring; the CSV values are exactly what is scored",
+  "sensitivity": {
+    "S1": {
+      "status": "omitted",
+      "reason": "The PhysioNet project page states each subject was 'starting from rest' but gives no onset time or rest duration; the dataset paper page (MDPI) could not be retrieved (HTTP 403). A cut-off would be invented, so per the approved decision S1 is omitted."
+    },
+    "S2": {"rr_min_s": 0.25, "rr_max_s": 1.5, "scope": "Task A re-run with screened windows removed from both training and test"},
+    "S3": {"exclude_from_aggregate": ["s4"], "scope": "aggregates only; models unchanged"}
+  },
+  "failure_analysis": {
+    "top_fraction": 0.10,
+    "m5_failure_records": ["s4_run", "s1_walk", "s8_run", "s5_run"],
+    "descriptors": "activity mix, median reference HR, median accelerometer magnitude (header units, uncalibrated, descriptive only)"
+  },
+  "outputs_dir": "experiments/m6/outputs"
+}

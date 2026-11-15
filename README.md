@@ -52,7 +52,7 @@ Then click **Load NASA OSDR OSD-575 CMP (verified)**. The app re-checks the SHA-
 
 ## Channel panel (M2)
 
-**Channel panel…** opens a body/channel view built from the signal registry. Every channel shows exactly one status: *Measured · lab sample* (the 19 OSD-575 analytes, which are sparse blood draws, not continuous sensing), *Unavailable* (WESAD until its terms and data are verified; Bio-Monitor, BP, sleep, PVT, ONSD and cabin telemetry, which have no public source), and *Recorded* / *Simulated* (none in this build). It is **not a validated physiological digital twin**. It shows no scores, risk levels, cutoffs or diagnoses, and it is not connected to any NASA or CSA system.
+**Channel panel…** opens a body/channel view built from the signal registry. Every channel shows exactly one status: *Measured · lab sample* (the 19 OSD-575 analytes, which are sparse blood draws, not continuous sensing), *Unavailable* (WESAD until its terms and data are verified; Bio-Monitor, BP, sleep, PVT, ONSD and cabin telemetry, which have no public source), *Recorded · non-astronaut* (the 5 PhysioNet playback channels, added in M5) and *Simulated* (the 3 demo-playback channels). It is **not a validated physiological digital twin**. It shows no scores, risk levels, cutoffs or diagnoses, and it is not connected to any NASA or CSA system.
 
 ## Demo lanes (three separate pipelines, each with its own label)
 
@@ -63,7 +63,7 @@ Then click **Load NASA OSDR OSD-575 CMP (verified)**. The app re-checks the SHA-
 | **RECORDED non-astronaut** | **Recorded wearable (PhysioNet)…** | PhysioNet *Wrist PPG During Exercise* v1.0.0: 8 adults, terrestrial lab exercise (walk, run, cycling), chest ECG and wrist PPG/accelerometer at 256 Hz. **Every file is SHA-256-verified** against the owner's checksums, and **every signal is checked against its WFDB header checksum.** *Play record* replays it through the same adapter boundary. *Run HR methods check* compares a simple PPG heart-rate estimate with the dataset's hand-marked reference ECG beats. The parameters were fixed beforehand, and the results are shown exactly as measured. | **Not astronaut data**, not a stress dataset, not a device connection. Amplitudes are as declared in the header and not calibrated. The HR check is **not validated** and has no clinical meaning (n = 8). |
 | **FL SIMULATION** | **FL simulation…** | A framework-free FedAvg on generated toy 2-D data: 2–8 simulated clients, 1–30 rounds, fixed seed 7. It shows the client sizes, the per-round local update sizes, the global weights, and a client → server flow diagram. The server step receives only (weights, n). | **One computer.** Not habitats, sites or devices; not Flower (not installed); **no privacy protection** (no differential privacy, and FedAvg alone is not privacy); no accuracy or performance claims; no clinical meaning. |
 
-The **Channel panel…** lists every channel with exactly one status: 19 *Measured · lab sample*, 3 *Simulated*, and 22 *Unavailable*, including the WESAD channels (that gate is NO-GO) and the Bio-Monitor, BP, sleep, PVT, ONSD and cabin channels. Its "not a validated physiological digital twin" notice is always visible.
+The **Channel panel…** lists all 49 channels, each with exactly one status: 19 *Measured · lab sample*, 5 *Recorded · non-astronaut*, 3 *Simulated*, and 22 *Unavailable*, including the WESAD channels (that gate is NO-GO) and the Bio-Monitor, BP, sleep, PVT, ONSD and cabin channels. Its "not a validated physiological digital twin" notice is always visible.
 
 ### Recorded non-astronaut lane: setup (once, needs internet)
 
@@ -87,6 +87,30 @@ This downloads the 59 files (about 50 MB) into `~/.hyperion_mda/physionet/wrist-
 4. **Recorded wearable (PhysioNet)…**: pick a record and click **Play record** (8-second window, RECORDED-NON-ASTRONAUT). Then click **Run HR methods check** to see per-record PPG-vs-reference differences, with the parameters and caveats shown.
 5. **Channel panel…**: click **Wrist** to see the *Recorded*, *Simulated* and *Unavailable* (WESAD) channels side by side.
 
+## M6 research experiment (offline; not shown in the app)
+
+`experiments/m6/` holds a leave-one-participant-out (LOPO) evaluation of simple baselines on the PhysioNet Wrist PPG data. It covers **8 adults doing terrestrial lab exercise**; these are not astronaut data and no validated algorithm comes out of it.
+- **Setup:** the frozen config and fixed hyperparameters are in `experiments/m6/m6-lopo-config.json`. Only numpy and scipy are used.
+- **Design rules:** the ECG is used as the reference only. Folds are separated by participant, and standardisation is fitted on the training participants.
+
+**Measured results:**
+
+| Measure | Result |
+|---|---|
+| Heart rate, mean absolute error | **No method beat a predictor that ignores the signal:** 24.18 bpm for it, against 23.67 for the frozen M5 method and 30.06–32.22 for the ridge models |
+| Activity (walk / run / cycle), accelerometer logistic regression | 0.733 accuracy and 0.731 macro-F1, against 0.451 and 0.207 for the majority class |
+| Does PPG add information beyond the accelerometer? | No evidence at n = 8, for either task |
+
+Details: [docs/M6-RESULTS-SUMMARY.md](docs/M6-RESULTS-SUMMARY.md), [docs/M6-TECHNICAL-REVIEW.md](docs/M6-TECHNICAL-REVIEW.md), and the generated `experiments/m6/outputs/report.md`. The next step, M7, is a **proposal only**: [docs/M7-PROPOSAL.md](docs/M7-PROPOSAL.md).
+
+```bash
+.venv\Scripts\python experiments\m6\run_m6.py
+```
+
+```bash
+.venv\Scripts\python experiments\m6\verify_m6.py
+```
+
 ## Your own CSV files
 
 **Open CSV…** loads a CSV in the original demo format, described in [docs/CSV-SCHEMA.md](docs/CSV-SCHEMA.md). Those files get the "provenance not verified" banner and the original demo rules, including the illustrative flag. The synthetic example CSV now lives only in `tests/fixtures/`; the app never loads it on its own.
@@ -97,7 +121,13 @@ This downloads the 59 files (about 50 MB) into `~/.hyperion_mda/physionet/wrist-
 python -m unittest discover -s tests -v
 ```
 
-The suite has 173 tests:
+The M6 experiment has 27 further tests, which need the `.venv` and the PhysioNet cache:
+
+```bash
+.venv\Scripts\python -m unittest discover -s experiments/m6/tests -v
+```
+
+The main suite has 173 tests:
 - **Engine, chart and packaging tests**, using synthetic fixtures that are kept inside the tests.
 - **OSDR tests:** checksum mismatch, schema validation, the fetch logic (using local `file://` URLs, so no network is needed), mission-relative ordering, unit preservation, `NA` handling and pre-flight-only baselines.
 - **An end-to-end check on the real verified file**, through to the UI data model, which compares every z-score with an independent calculation from the raw CSV. These real-file tests **skip with a stated reason** if you haven't run the fetch command.
@@ -106,6 +136,6 @@ All of these are software checks only. They do not validate anything clinically.
 
 ## Not implemented
 
-Federated learning, differential privacy, a blockchain or ledger, clinical state machines or protocols, ultrasound or ONSD analysis, PVT or other instruments, sensor or wearable integration, live streaming, and any NASA/CSA system integration. See [docs/IMPLEMENTATION-STATUS.md](docs/IMPLEMENTATION-STATUS.md) and [docs/REQUIREMENTS-TRACEABILITY.md](docs/REQUIREMENTS-TRACEABILITY.md).
+A validated heart-rate algorithm (the M6 baselines did not beat a no-signal predictor), federated learning beyond the toy simulation, differential privacy, a blockchain or ledger, clinical state machines or protocols, ultrasound or ONSD analysis, PVT or other instruments, sensor or wearable integration, live streaming, and any NASA/CSA system integration. See [docs/IMPLEMENTATION-STATUS.md](docs/IMPLEMENTATION-STATUS.md) and [docs/REQUIREMENTS-TRACEABILITY.md](docs/REQUIREMENTS-TRACEABILITY.md).
 
 Acknowledgment suggested by OSDR: *Data are courtesy of the NASA Open Science Data Repository.* For the dataset citation, use the "Citation" panel on the OSDR study page. Related publication: Overbey et al., *Collection of Biospecimens from the Inspiration4 Mission Establishes the Standards for the Space Omics and Medical Atlas (SOMA)*, doi:10.1038/s41467-024-48806-z.

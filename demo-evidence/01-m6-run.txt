@@ -1,0 +1,3 @@
+> .venv\Scripts\python experiments\m6\run_m6.py
+M6 run complete: 3332 windows; A1 identical to M5: True
+exit=0

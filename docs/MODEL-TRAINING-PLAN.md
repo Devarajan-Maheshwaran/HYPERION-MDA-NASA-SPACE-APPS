@@ -1,6 +1,13 @@
 # Phased model-training plan (MVP)
 
-**Status: plan only. No model has been trained, and no result exists.** Numbers below are design parameters to fix *before* looking at test results, not findings.
+**Status: the WESAD plan below is still a plan only.** No WESAD model has been trained, and the WESAD gate is NO-GO. The numbers below are design parameters to fix *before* looking at test results, not findings.
+
+> **Update 2026-11-15.** The LOPO evaluation pattern of this plan has been carried out on a *different* dataset: PhysioNet Wrist PPG During Exercise, as build milestone **M6**.
+> - **Models:** linear models only (ridge regression and logistic regression), with fixed hyperparameters, under leave-one-participant-out evaluation.
+> - **Tasks:** heart-rate estimation and walk / run / cycle activity labels. It is not a stress task.
+> - **Where:** [M6-LOPO-PROTOCOL.md](M6-LOPO-PROTOCOL.md) and [M6-RESULTS-SUMMARY.md](M6-RESULTS-SUMMARY.md).
+>
+> No Flower or DP experiment has been run.
 
 ## 0. Scope decision: which data can support a model?
 

@@ -41,7 +41,15 @@ The illustrative |z| flag applies **only** to this path and is not a clinical th
 
 The simulated and FL modules import nothing from the NASA pipeline, and the reverse also holds. Wearable samples are a separate type (`WearableSample`) from NASA `TelemetryRecord`s. No real device adapter exists.
 
-**Stack:** Python standard library and Tkinter for the core app. numpy and scipy only for the M5 HR methods check, in an isolated `.venv`. Network access exists only in the two explicit fetch commands (`osdr_fetch`, `physionet_fetch`). Tests use `unittest`; there are 173 tests.
+**M6 offline experiment (implemented; not part of the desktop app):** `experiments/m6/`.
+- *Pipeline:* frozen config `m6-lopo-config.json` → `m6_data` → `m6_features` → `m6_models` → `run_m6` → outputs (CSV / JSON / report) → independent `verify_m6`.
+  - `m6_data` reuses the M5 verified reader. Inputs (PPG and accelerometer) and the reference (annotation file) are loaded by separate functions.
+  - `m6_features` is label-free.
+  - `m6_models` holds the numpy/scipy ridge and logistic models and the LOPO driver.
+- *Imports:* M6 imports `hyperion_mda` modules read-only. Nothing in `src/` imports M6.
+- *Separation:* results are never shown in the app or fed into the NASA lane.
+
+**Stack:** Python standard library and Tkinter for the core app. numpy and scipy only for the M5 HR methods check and the M6 experiment, in an isolated `.venv`. Network access exists only in the two explicit fetch commands (`osdr_fetch`, `physionet_fetch`). Tests use `unittest`: 173 in `tests/` and 27 in `experiments/m6/tests/`.
 
 ## 2. MVP target architecture (the signal registry and channel panel exist as of M2; everything else below is planned)
 

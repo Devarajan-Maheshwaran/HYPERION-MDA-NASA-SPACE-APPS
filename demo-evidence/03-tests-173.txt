@@ -1,0 +1,194 @@
+> .venv\Scripts\python -m unittest discover -s tests -v
+test_chronological_order_across_offsets (test_chart.ChartDataTests.test_chronological_order_across_offsets) ... ok
+test_equal_timestamps_keep_file_order (test_chart.ChartDataTests.test_equal_timestamps_keep_file_order) ... ok
+test_grouped_by_subject_signal_and_unit_only (test_chart.ChartDataTests.test_grouped_by_subject_signal_and_unit_only) ... ok
+test_invalid_timestamps_listed_not_plotted (test_chart.ChartDataTests.test_invalid_timestamps_listed_not_plotted) ... ok
+test_low_quality_rows_still_plotted_as_imported (test_chart.ChartDataTests.test_low_quality_rows_still_plotted_as_imported) ... ok
+test_missing_group_key_explained (test_chart.ChartDataTests.test_missing_group_key_explained) ... ok
+test_nice_ticks_are_round_and_in_range (test_chart.ChartDataTests.test_nice_ticks_are_round_and_in_range) ... ok
+test_padded_range_handles_flat_and_reversed (test_chart.ChartDataTests.test_padded_range_handles_flat_and_reversed) ... ok
+test_record_types_and_selected_point (test_chart.ChartDataTests.test_record_types_and_selected_point) ... ok
+test_selected_row_with_invalid_timestamp_has_no_point (test_chart.ChartDataTests.test_selected_row_with_invalid_timestamp_has_no_point) ... ok
+test_too_few_valid_timestamps_explained (test_chart.ChartDataTests.test_too_few_valid_timestamps_explained) ... ok
+test_bundled_example_draws_markers (test_chart.ChartWidgetTests.test_bundled_example_draws_markers) ... ok
+test_message_shown_when_unplottable (test_chart.ChartWidgetTests.test_message_shown_when_unplottable) ... ok
+test_redraws_after_resize (test_chart.ChartWidgetTests.test_redraws_after_resize) ... ok
+test_good_samples_pass (test_demo_lanes.AdapterValidationTests.test_good_samples_pass) ... ok
+test_invalid_read_window (test_demo_lanes.AdapterValidationTests.test_invalid_read_window) ... ok
+test_malformed_inputs_rejected_with_messages (test_demo_lanes.AdapterValidationTests.test_malformed_inputs_rejected_with_messages) ... ok
+test_each_round_global_equals_fedavg_of_client_updates (test_demo_lanes.FLSimulationTests.test_each_round_global_equals_fedavg_of_client_updates) ... ok
+test_fedavg_is_sample_weighted_average (test_demo_lanes.FLSimulationTests.test_fedavg_is_sample_weighted_average) ... ok
+test_invalid_parameters_rejected (test_demo_lanes.FLSimulationTests.test_invalid_parameters_rejected) ... ok
+test_reproducible (test_demo_lanes.FLSimulationTests.test_reproducible) ... ok
+test_server_step_receives_only_weights_and_counts (test_demo_lanes.FLSimulationTests.test_server_step_receives_only_weights_and_counts) ... ok
+test_structure_counts (test_demo_lanes.FLSimulationTests.test_structure_counts) ... ok
+test_fl_window_runs_and_validates (test_demo_lanes.GuiDemoFlowTests.test_fl_window_runs_and_validates) ... ok
+test_full_flow_keeps_nasa_records_untouched (test_demo_lanes.GuiDemoFlowTests.test_full_flow_keeps_nasa_records_untouched) ... ok
+test_playback_reports_malformed_adapter_data (test_demo_lanes.GuiDemoFlowTests.test_playback_reports_malformed_adapter_data) ... ok
+test_playback_window_labels_and_controls (test_demo_lanes.GuiDemoFlowTests.test_playback_window_labels_and_controls) ... ok
+test_fl_lane_does_not_import_nasa_or_wearable (test_demo_lanes.LaneSeparationTests.test_fl_lane_does_not_import_nasa_or_wearable) ... ok
+test_nasa_lane_does_not_import_demo_lanes (test_demo_lanes.LaneSeparationTests.test_nasa_lane_does_not_import_demo_lanes) ... ok
+test_simulated_lane_does_not_import_nasa_or_fl (test_demo_lanes.LaneSeparationTests.test_simulated_lane_does_not_import_nasa_or_fl) ... ok
+test_toy_fl_data_is_generated_and_unrelated_to_nasa_analytes (test_demo_lanes.LaneSeparationTests.test_toy_fl_data_is_generated_and_unrelated_to_nasa_analytes) ... ok
+test_wearable_samples_are_a_different_type_from_nasa_records (test_demo_lanes.LaneSeparationTests.test_wearable_samples_are_a_different_type_from_nasa_records) ... ok
+test_sample_rates_match_channel_specs (test_demo_lanes.PlaybackTests.test_sample_rates_match_channel_specs) ... ok
+test_seek_clamps_and_rejects_bad_input (test_demo_lanes.PlaybackTests.test_seek_clamps_and_rejects_bad_input) ... ok
+test_session_requires_an_adapter (test_demo_lanes.PlaybackTests.test_session_requires_an_adapter) ... ok
+test_start_tick_pause_reset (test_demo_lanes.PlaybackTests.test_start_tick_pause_reset) ... ok
+test_stops_at_end_and_restarts_from_zero (test_demo_lanes.PlaybackTests.test_stops_at_end_and_restarts_from_zero) ... ok
+test_window_is_deterministic_and_bounded (test_demo_lanes.PlaybackTests.test_window_is_deterministic_and_bounded) ... ok
+test_every_sample_and_channel_is_labelled_simulated (test_demo_lanes.SimulatedLabellingTests.test_every_sample_and_channel_is_labelled_simulated) ... ok
+test_registry_lists_simulated_channels_with_simulated_status (test_demo_lanes.SimulatedLabellingTests.test_registry_lists_simulated_channels_with_simulated_status) ... ok
+test_baseline_rows_have_no_score (test_engine.BaselineSeparationTests.test_baseline_rows_have_no_score) ... ok
+test_baselines_are_per_subject_signal_unit (test_engine.BaselineSeparationTests.test_baselines_are_per_subject_signal_unit) ... ok
+test_bundled_sample (test_engine.BaselineSeparationTests.test_bundled_sample) ... ok
+test_demo_flag_uses_single_constant (test_engine.BaselineSeparationTests.test_demo_flag_uses_single_constant) ... ok
+test_invalid_record_type_skipped (test_engine.BaselineSeparationTests.test_invalid_record_type_skipped) ... ok
+test_low_quality_baselines_excluded (test_engine.BaselineSeparationTests.test_low_quality_baselines_excluded) ... ok
+test_low_quality_observation_not_scored (test_engine.BaselineSeparationTests.test_low_quality_observation_not_scored) ... ok
+test_observation_not_included_in_baseline (test_engine.BaselineSeparationTests.test_observation_not_included_in_baseline) ... ok
+test_other_observations_do_not_shift_baseline (test_engine.BaselineSeparationTests.test_other_observations_do_not_shift_baseline) ... ok
+test_duplicate_observations_both_unscored (test_engine.DuplicateReadingTests.test_duplicate_observations_both_unscored) ... ok
+test_duplicates_flagged_kept_and_excluded (test_engine.DuplicateReadingTests.test_duplicates_flagged_kept_and_excluded) ... ok
+test_equal_instant_different_offsets_is_duplicate (test_engine.DuplicateReadingTests.test_equal_instant_different_offsets_is_duplicate) ... ok
+test_every_row_in_larger_group_flagged (test_engine.DuplicateReadingTests.test_every_row_in_larger_group_flagged) ... ok
+test_invalid_timestamps_never_matched_as_duplicates (test_engine.DuplicateReadingTests.test_invalid_timestamps_never_matched_as_duplicates) ... ok
+test_non_duplicates (test_engine.DuplicateReadingTests.test_non_duplicates) ... ok
+test_same_instant_different_unit_is_duplicate (test_engine.DuplicateReadingTests.test_same_instant_different_unit_is_duplicate) ... ok
+test_malformed_csv (test_engine.FileErrorTests.test_malformed_csv) ... ok
+test_missing_file (test_engine.FileErrorTests.test_missing_file) ... ok
+test_non_utf8_input (test_engine.FileErrorTests.test_non_utf8_input) ... ok
+test_no_baseline (test_engine.InsufficientBaselineTests.test_no_baseline) ... ok
+test_single_baseline (test_engine.InsufficientBaselineTests.test_single_baseline) ... ok
+test_zero_spread_baseline (test_engine.InsufficientBaselineTests.test_zero_spread_baseline) ... ok
+test_blank_quality_flagged_and_not_used (test_engine.RowValidationTests.test_blank_quality_flagged_and_not_used) ... ok
+test_invalid_values_skipped_with_issue (test_engine.RowValidationTests.test_invalid_values_skipped_with_issue) ... ok
+test_missing_columns (test_engine.RowValidationTests.test_missing_columns) ... ok
+test_wrong_field_count_skipped (test_engine.RowValidationTests.test_wrong_field_count_skipped) ... ok
+test_allow_list_matches_bundled_sample_exactly (test_engine.SupportedPairTests.test_allow_list_matches_bundled_sample_exactly) ... ok
+test_bpm_observation_with_only_unsupported_unit_baselines (test_engine.SupportedPairTests.test_bpm_observation_with_only_unsupported_unit_baselines) ... ok
+test_no_unit_conversion (test_engine.SupportedPairTests.test_no_unit_conversion) ... ok
+test_supported_pairs_are_scored (test_engine.SupportedPairTests.test_supported_pairs_are_scored) ... ok
+test_unsupported_pairs_flagged_visible_and_not_scored (test_engine.SupportedPairTests.test_unsupported_pairs_flagged_visible_and_not_scored) ... ok
+test_different_offsets_compared_as_instants (test_engine.TemporalEligibilityTests.test_different_offsets_compared_as_instants) ... ok
+test_fewer_than_two_earlier_baselines (test_engine.TemporalEligibilityTests.test_fewer_than_two_earlier_baselines) ... ok
+test_future_baseline_excluded (test_engine.TemporalEligibilityTests.test_future_baseline_excluded) ... ok
+test_invalid_timestamp_baseline_visible_but_unused (test_engine.TemporalEligibilityTests.test_invalid_timestamp_baseline_visible_but_unused) ... ok
+test_invalid_timestamp_observation_not_scored (test_engine.TemporalEligibilityTests.test_invalid_timestamp_observation_not_scored) ... ok
+test_same_instant_different_offset_excluded (test_engine.TemporalEligibilityTests.test_same_instant_different_offset_excluded) ... ok
+test_same_timestamp_baseline_excluded (test_engine.TemporalEligibilityTests.test_same_timestamp_baseline_excluded) ... ok
+test_chronological_order_and_invalid_kept (test_engine.TimestampTests.test_chronological_order_and_invalid_kept) ... ok
+test_offsets_compared_correctly (test_engine.TimestampTests.test_offsets_compared_correctly) ... ok
+test_checksum_failure_leaves_nothing_in_cache (test_osdr.FetchTests.test_checksum_failure_leaves_nothing_in_cache) ... ok
+test_cli_reports_failure_with_nonzero_exit (test_osdr.FetchTests.test_cli_reports_failure_with_nonzero_exit) ... OSDR download FAILED: boom
+ok
+test_file_absent_from_listing_refused (test_osdr.FetchTests.test_file_absent_from_listing_refused) ... ok
+test_listing_size_change_refused (test_osdr.FetchTests.test_listing_size_change_refused) ... ok
+test_restricted_listing_refused (test_osdr.FetchTests.test_restricted_listing_refused) ... ok
+test_successful_fetch_is_verified (test_osdr.FetchTests.test_successful_fetch_is_verified) ... ok
+test_invalid_label_kept_visible_and_unscored (test_osdr.MissionOrderingTests.test_invalid_label_kept_visible_and_unscored) ... ok
+test_label_order (test_osdr.MissionOrderingTests.test_label_order) ... ok
+test_no_calendar_dates_created (test_osdr.MissionOrderingTests.test_no_calendar_dates_created) ... ok
+test_parse_timepoint (test_osdr.MissionOrderingTests.test_parse_timepoint) ... ok
+test_baseline_count_and_descriptive_label (test_osdr.PreflightBaselineTests.test_baseline_count_and_descriptive_label) ... ok
+test_fewer_than_two_preflight_values (test_osdr.PreflightBaselineTests.test_fewer_than_two_preflight_values) ... ok
+test_no_illustrative_flag_even_for_large_z (test_osdr.PreflightBaselineTests.test_no_illustrative_flag_even_for_large_z) ... ok
+test_only_preflight_rows_are_baselines (test_osdr.PreflightBaselineTests.test_only_preflight_rows_are_baselines) ... ok
+test_series_kept_per_subject_and_analyte (test_osdr.PreflightBaselineTests.test_series_kept_per_subject_and_analyte) ... ok
+test_every_row_kept_with_source_reference (test_osdr.RealOsdrEndToEndTests.test_every_row_kept_with_source_reference) ... ok
+test_file_matches_manifest (test_osdr.RealOsdrEndToEndTests.test_file_matches_manifest) ... ok
+test_missing_values_reported_exactly (test_osdr.RealOsdrEndToEndTests.test_missing_values_reported_exactly) ... ok
+test_no_flags_alerts_or_baselines_from_postflight (test_osdr.RealOsdrEndToEndTests.test_no_flags_alerts_or_baselines_from_postflight) ... ok
+test_units_and_names_preserved_from_raw (test_osdr.RealOsdrEndToEndTests.test_units_and_names_preserved_from_raw) ... ok
+test_z_scores_match_independent_calculation (test_osdr.RealOsdrEndToEndTests.test_z_scores_match_independent_calculation) ... ok
+test_axis_title_and_note_do_not_overlap_at_minimum_size (test_osdr.RealOsdrGuiTests.test_axis_title_and_note_do_not_overlap_at_minimum_size) ... invalid command name "2864848092096_tick"
+    while executing
+"2864848092096_tick"
+    ("after" script)
+invalid command name "2864848092224_tick"
+    while executing
+"2864848092224_tick"
+    ("after" script)
+ok
+test_load_select_and_chart (test_osdr.RealOsdrGuiTests.test_load_select_and_chart) ... ok
+test_missing_file_shows_failure_and_loads_nothing (test_osdr.RealOsdrGuiTests.test_missing_file_shows_failure_and_loads_nothing) ... ok
+test_na_timepoint_keeps_its_axis_slot (test_osdr.RealOsdrGuiTests.test_na_timepoint_keeps_its_axis_slot) ... ok
+test_tampered_file_rejected_in_gui (test_osdr.RealOsdrGuiTests.test_tampered_file_rejected_in_gui) ... ok
+test_demographics_and_reference_ranges_not_used (test_osdr.SchemaTests.test_demographics_and_reference_ranges_not_used) ... ok
+test_exact_header_required (test_osdr.SchemaTests.test_exact_header_required) ... ok
+test_non_cmp_rows_flagged (test_osdr.SchemaTests.test_non_cmp_rows_flagged) ... ok
+test_wrong_field_count_rejected (test_osdr.SchemaTests.test_wrong_field_count_rejected) ... ok
+test_cache_dir_override (test_osdr.SourceVerificationTests.test_cache_dir_override) ... ok
+test_checksum_mismatch_same_size (test_osdr.SourceVerificationTests.test_checksum_mismatch_same_size) ... ok
+test_matching_file_verifies (test_osdr.SourceVerificationTests.test_matching_file_verifies) ... ok
+test_missing_file_is_reported_not_substituted (test_osdr.SourceVerificationTests.test_missing_file_is_reported_not_substituted) ... ok
+test_size_mismatch (test_osdr.SourceVerificationTests.test_size_mismatch) ... ok
+test_na_is_visible_reported_and_not_imputed (test_osdr.UnitAndValueTests.test_na_is_visible_reported_and_not_imputed) ... ok
+test_units_and_analyte_names_preserved_exactly (test_osdr.UnitAndValueTests.test_units_and_analyte_names_preserved_exactly) ... ok
+test_unparseable_value_reported (test_osdr.UnitAndValueTests.test_unparseable_value_reported) ... ok
+test_unsupported_unit_flagged_not_converted (test_osdr.UnitAndValueTests.test_unsupported_unit_flagged_not_converted) ... ok
+test_horizontal_scroll_available (test_packaging.GuiSourceModeTests.test_horizontal_scroll_available) ... ok
+test_initial_state_shows_no_data (test_packaging.GuiSourceModeTests.test_initial_state_shows_no_data) ... ok
+test_no_synthetic_runtime_button (test_packaging.GuiSourceModeTests.test_no_synthetic_runtime_button) ... ok
+test_user_csv_gets_unverified_banner_and_demo_rules (test_packaging.GuiSourceModeTests.test_user_csv_gets_unverified_banner_and_demo_rules) ... ok
+test_no_data_files_ship_in_the_package (test_packaging.PackagedFilesTests.test_no_data_files_ship_in_the_package) ... ok
+test_provenance_manifest_is_packaged_and_complete (test_packaging.PackagedFilesTests.test_provenance_manifest_is_packaged_and_complete) ... ok
+test_manifest_json_is_valid (test_packaging.SourceTreeTests.test_manifest_json_is_valid) ... ok
+test_package_data_declares_manifest_only (test_packaging.SourceTreeTests.test_package_data_declares_manifest_only) ... ok
+test_synthetic_sample_isolated_to_tests (test_packaging.SourceTreeTests.test_synthetic_sample_isolated_to_tests) ... ok
+test_labels_provenance_and_interface (test_physionet.AdapterTests.test_labels_provenance_and_interface) ... ok
+test_missing_cache_raises_adapter_error (test_physionet.AdapterTests.test_missing_cache_raises_adapter_error) ... ok
+test_read_uses_uniform_sample_index_and_validates (test_physionet.AdapterTests.test_read_uses_uniform_sample_index_and_validates) ... ok
+test_cli_reports_failure (test_physionet.GateTests.test_cli_reports_failure) ... PhysioNet download FAILED: boom
+ok
+test_fetch_rejects_changed_sums_file_before_downloading (test_physionet.GateTests.test_fetch_rejects_changed_sums_file_before_downloading) ... ok
+test_fetch_rejects_tampered_file_and_leaves_nothing (test_physionet.GateTests.test_fetch_rejects_tampered_file_and_leaves_nothing) ... ok
+test_fetch_verifies_every_file (test_physionet.GateTests.test_fetch_verifies_every_file) ... ok
+test_missing_and_mismatched_files (test_physionet.GateTests.test_missing_and_mismatched_files) ... ok
+test_play_and_check_leave_nasa_records_untouched (test_physionet.GuiTests.test_play_and_check_leave_nasa_records_untouched) ... ok
+test_recorded_window_labels_and_failure_without_data (test_physionet.GuiTests.test_recorded_window_labels_and_failure_without_data) ... invalid command name "2864847827904_tick"
+    while executing
+"2864847827904_tick"
+    ("after" script)
+ok
+test_deterministic_and_finite (test_physionet.HRCheckTests.test_deterministic_and_finite) ... ok
+test_parameters_fixed (test_physionet.HRCheckTests.test_parameters_fixed) ... ok
+test_reference_rate_matches_independent_calculation (test_physionet.HRCheckTests.test_reference_rate_matches_independent_calculation) ... ok
+test_core_app_does_not_import_numpy_or_scipy_at_module_level (test_physionet.LaneSeparationTests.test_core_app_does_not_import_numpy_or_scipy_at_module_level) ... ok
+test_recorded_lane_imports_no_nasa_fl_or_simulated_modules (test_physionet.LaneSeparationTests.test_recorded_lane_imports_no_nasa_fl_or_simulated_modules) ... ok
+test_manifest_records_terms_and_pins (test_physionet.ManifestTests.test_manifest_records_terms_and_pins) ... ok
+test_no_physionet_data_ships_in_package (test_physionet.ManifestTests.test_no_physionet_data_ships_in_package) ... ok
+test_annotations_metadata_skip_notes_and_beats (test_physionet.ReaderTests.test_annotations_metadata_skip_notes_and_beats) ... ok
+test_checksum_mismatch_rejected (test_physionet.ReaderTests.test_checksum_mismatch_rejected) ... ok
+test_reads_and_verifies_checksums (test_physionet.ReaderTests.test_reads_and_verifies_checksums) ... ok
+test_size_mismatch_and_unsupported_format (test_physionet.ReaderTests.test_size_mismatch_and_unsupported_format) ... ok
+test_all_records_verify_and_match_header_checksums (test_physionet.RealFileTests.test_all_records_verify_and_match_header_checksums) ... ok
+test_units_preserved_from_header (test_physionet.RealFileTests.test_units_preserved_from_header) ... ok
+test_lanes_are_disjoint (test_registry.LaneSeparationTests.test_lanes_are_disjoint) ... ok
+test_no_wesad_or_real_data_training_module_exists (test_registry.LaneSeparationTests.test_no_wesad_or_real_data_training_module_exists) ... ok
+test_osd575_records_map_only_to_nasa_lab_channels (test_registry.LaneSeparationTests.test_osd575_records_map_only_to_nasa_lab_channels) ... ok
+test_registry_and_panel_do_no_io_and_no_training (test_registry.LaneSeparationTests.test_registry_and_panel_do_no_io_and_no_training) ... ok
+test_badge_colours_are_not_risk_colours (test_registry.PanelTests.test_badge_colours_are_not_risk_colours) ... ok
+test_every_channel_shown_once_with_its_badge (test_registry.PanelTests.test_every_channel_shown_once_with_its_badge) ... ok
+test_lab_channels_show_session_counts_only_after_verified_load (test_registry.PanelTests.test_lab_channels_show_session_counts_only_after_verified_load) ... ok
+test_layout_legend_session_column_and_labels_readable (test_registry.PanelTests.test_layout_legend_session_column_and_labels_readable) ... ok
+test_main_window_scoring_unchanged_by_panel (test_registry.PanelTests.test_main_window_scoring_unchanged_by_panel) ... ok
+test_notice_stays_visible_through_filtering_and_selection (test_registry.PanelTests.test_notice_stays_visible_through_filtering_and_selection) ... ok
+test_rows_contain_no_assessment_wording_or_values_for_unavailable (test_registry.PanelTests.test_rows_contain_no_assessment_wording_or_values_for_unavailable) ... ok
+test_every_osd575_pair_has_exactly_one_lab_channel (test_registry.RegistryCoverageTests.test_every_osd575_pair_has_exactly_one_lab_channel) ... ok
+test_registry_is_consistent (test_registry.RegistryCoverageTests.test_registry_is_consistent) ... ok
+test_required_unavailable_channels_present (test_registry.RegistryCoverageTests.test_required_unavailable_channels_present) ... ok
+test_wesad_channels_unavailable_pending_gate (test_registry.RegistryCoverageTests.test_wesad_channels_unavailable_pending_gate) ... ok
+test_channel_ids_unique (test_registry.StatusTests.test_channel_ids_unique) ... ok
+test_every_channel_has_a_source_description (test_registry.StatusTests.test_every_channel_has_a_source_description) ... ok
+test_exactly_one_valid_status_per_channel (test_registry.StatusTests.test_exactly_one_valid_status_per_channel) ... ok
+test_registry_holds_no_values (test_registry.StatusTests.test_registry_holds_no_values) ... ok
+test_simulated_and_recorded_channels_each_in_their_own_lane (test_registry.StatusTests.test_simulated_and_recorded_channels_each_in_their_own_lane) ... ok
+test_lab_analytes_grouped_by_sample_not_organ (test_registry.WordingTests.test_lab_analytes_grouped_by_sample_not_organ) ... ok
+test_no_clinical_risk_or_integration_wording (test_registry.WordingTests.test_no_clinical_risk_or_integration_wording) ... ok
+
+----------------------------------------------------------------------
+Ran 173 tests in 13.563s
+
+OK
+exit=0

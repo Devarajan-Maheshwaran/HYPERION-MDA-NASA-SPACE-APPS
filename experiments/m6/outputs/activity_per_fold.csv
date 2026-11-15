@@ -1,0 +1,49 @@
+label_set,model,test_participant,windows,accuracy,balanced_accuracy,macro_f1,macro_f1_note,classes_present
+primary_3class,B0,s1,868,0.664747,0.500000,0.399308,over the 2 classes present only,walk|cycle
+primary_3class,B0,s2,567,0.654321,0.500000,0.395522,over the 2 classes present only,walk|cycle
+primary_3class,B0,s3,571,0.492119,0.333333,0.219875,over all classes,walk|run|cycle
+primary_3class,B0,s4,143,0.000000,0.000000,n/a,n/a: single-class test fold,run
+primary_3class,B0,s5,288,0.475694,0.500000,0.322353,over the 2 classes present only,run|cycle
+primary_3class,B0,s6,450,0.304444,0.333333,0.155593,over all classes,walk|run|cycle
+primary_3class,B0,s8,338,0.000000,0.000000,0.000000,over the 2 classes present only,walk|run
+primary_3class,B0,s9,107,0.000000,0.000000,n/a,n/a: single-class test fold,walk
+primary_3class,B1,s1,868,0.540323,0.452402,0.491959,over the 2 classes present only,walk|cycle
+primary_3class,B1,s2,567,0.887125,0.843955,0.865580,over the 2 classes present only,walk|cycle
+primary_3class,B1,s3,571,0.968476,0.973869,0.968404,over all classes,walk|run|cycle
+primary_3class,B1,s4,143,0.000000,0.000000,n/a,n/a: single-class test fold,run
+primary_3class,B1,s5,288,0.704861,0.690119,0.774176,over the 2 classes present only,run|cycle
+primary_3class,B1,s6,450,0.724444,0.727444,0.725009,over all classes,walk|run|cycle
+primary_3class,B1,s8,338,0.834320,0.844986,0.914749,over the 2 classes present only,walk|run
+primary_3class,B1,s9,107,1.000000,1.000000,n/a,n/a: single-class test fold,walk
+primary_3class,B2,s1,868,0.500000,0.420370,0.461355,over the 2 classes present only,walk|cycle
+primary_3class,B2,s2,567,0.864198,0.864940,0.853978,over the 2 classes present only,walk|cycle
+primary_3class,B2,s3,571,0.971979,0.976241,0.971855,over all classes,walk|run|cycle
+primary_3class,B2,s4,143,0.013986,0.013986,n/a,n/a: single-class test fold,run
+primary_3class,B2,s5,288,0.840278,0.833809,0.894944,over the 2 classes present only,run|cycle
+primary_3class,B2,s6,450,0.668889,0.678666,0.674737,over all classes,walk|run|cycle
+primary_3class,B2,s8,338,0.745562,0.775505,0.758680,over the 2 classes present only,walk|run
+primary_3class,B2,s9,107,1.000000,1.000000,n/a,n/a: single-class test fold,walk
+secondary_4class,B0,s1,868,0.335253,0.333333,0.167386,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B0,s2,567,0.345679,0.333333,0.171254,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B0,s3,571,0.245184,0.250000,0.098453,over all classes,walk|run|low_bike|high_bike
+secondary_4class,B0,s4,143,0.000000,0.000000,n/a,n/a: single-class test fold,run
+secondary_4class,B0,s5,288,0.000000,0.000000,0.000000,over the 2 classes present only,run|low_bike
+secondary_4class,B0,s6,450,0.366667,0.333333,0.178862,over the 3 classes present only,walk|run|low_bike
+secondary_4class,B0,s8,338,0.585799,0.500000,0.369403,over the 2 classes present only,walk|run
+secondary_4class,B0,s9,107,1.000000,1.000000,n/a,n/a: single-class test fold,walk
+secondary_4class,B1,s1,868,0.324885,0.327470,0.313082,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B1,s2,567,0.599647,0.620520,0.571693,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B1,s3,571,0.742557,0.732795,0.663179,over all classes,walk|run|low_bike|high_bike
+secondary_4class,B1,s4,143,0.000000,0.000000,n/a,n/a: single-class test fold,run
+secondary_4class,B1,s5,288,0.690972,0.675521,0.758721,over the 2 classes present only,run|low_bike
+secondary_4class,B1,s6,450,0.580000,0.569938,0.671625,over the 3 classes present only,walk|run|low_bike
+secondary_4class,B1,s8,338,0.831361,0.843506,0.913509,over the 2 classes present only,walk|run
+secondary_4class,B1,s9,107,1.000000,1.000000,n/a,n/a: single-class test fold,walk
+secondary_4class,B2,s1,868,0.331797,0.334042,0.305263,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B2,s2,567,0.606702,0.609955,0.598063,over the 3 classes present only,walk|low_bike|high_bike
+secondary_4class,B2,s3,571,0.744308,0.734354,0.658540,over all classes,walk|run|low_bike|high_bike
+secondary_4class,B2,s4,143,0.013986,0.013986,n/a,n/a: single-class test fold,run
+secondary_4class,B2,s5,288,0.697917,0.683159,0.768918,over the 2 classes present only,run|low_bike
+secondary_4class,B2,s6,450,0.520000,0.517068,0.629804,over the 3 classes present only,walk|run|low_bike
+secondary_4class,B2,s8,338,0.775148,0.798665,0.792755,over the 2 classes present only,walk|run
+secondary_4class,B2,s9,107,1.000000,1.000000,n/a,n/a: single-class test fold,walk

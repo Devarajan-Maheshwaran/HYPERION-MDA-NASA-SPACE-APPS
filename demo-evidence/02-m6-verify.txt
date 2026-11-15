@@ -1,0 +1,3 @@
+> .venv\Scripts\python experiments\m6\verify_m6.py
+1187 checks passed, 0 failed
+exit=0

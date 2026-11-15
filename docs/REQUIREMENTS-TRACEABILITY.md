@@ -138,6 +138,13 @@ Abbreviations:
 | M6 Separate DP experiment with threat model and accountant report | S3-14, S4-5 (reduced) | AC-7 |
 | M7 Claims hygiene across UI and docs | S3-15, S5-6, S6-6 and all conflicts | AC-8 |
 
+> **Numbering note (2026-11-15).** The "MVP req" IDs M1–M7 in this table are PPT-traceability requirements. They are **not** the build milestones named elsewhere in the docs: M2 channel panel, M5 PhysioNet recorded lane, M6 PhysioNet LOPO baselines.
+>
+> **Status by requirement:**
+> - **M4 (LOPO baselines with per-class metrics and CIs):** satisfied in reduced form by build milestone M6. It used **PhysioNet Wrist PPG**, not WESAD (WESAD gate NO-GO), with participant-bootstrap intervals; see `docs/M6-RESULTS-SUMMARY.md`.
+> - **M3:** blocked (WESAD NO-GO).
+> - **M5 and M6** (Flower vs centralised; DP): not implemented.
+
 ---
 
 # Part B: earlier analysis against the pasted concept text (Concept Sections 1–10)

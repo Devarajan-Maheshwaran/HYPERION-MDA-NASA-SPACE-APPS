@@ -1,0 +1,53 @@
+[1 launch] s1
+   PASS 1 launch: title='HYPERION-MDA · Local Data Demo' banner='RESEARCH PROTOTYPE · NO DATA LOADED · NOT FOR MEDICAL DECISIONS'
+   PASS 1 launch: table empty at launch
+   labels[main@launch] required ['RESEARCH PROTOTYPE', 'NOT FOR MEDICAL DECISIONS']: present; clinical-term hits: ['diagnos']
+      context: 'Load the verified NASA OSDR OSD-575 file, or open your own CSV. This prototype shows descriptive comparisons only; it makes no diagnosis or recommendation.'
+[2 nasa] s2
+   PASS 2 nasa: status='NASA lab data · 531 rows · 22 NA · OSD-575 CMP · SHA-256 verified' rows=531
+   PASS 2 nasa: details first line='C001 · ALBUMIN · R+1 (post-flight observation)'
+   banner after load='NASA LAB DATA · OSDR OSD-575 · sparse laboratory measurements — not wearable telemetry · serum metabolic panel (CMP) from the 4 Inspiration4 crew · NOT FOR MEDICAL DECISIONS'
+   labels[main@nasa] required ['NASA']: present; clinical-term hits: ['diagnos']
+      context: "Each post-flight value (R+) is compared with the same person's pre-flight values (L-) for the same analyte and unit. The z-score is a descriptive, unvalidated c"
+[3 channels] s3
+   PASS 3 channels: title='HYPERION-MDA · Channel panel (not a validated digital twin)' heading='10 channels · Wrist' rows=10
+   PASS 3 channels: all regions rows=49
+   labels[channels] required ['Simulated', 'Unavailable']: present; clinical-term hits: none
+[4 sim] s4
+[4 sim] s4b
+   PASS 4 sim: position 't = 0 s of 300 s · paused · SIMULATED' -> 't = 13 s of 300 s · playing · SIMULATED' after ~3.5 s
+   labels[sim] required ['SIMULATED', 'not astronaut']: present; clinical-term hits: none
+[4 sim] s4c
+   PASS 4 sim: pause holds at 't = 13 s of 300 s · paused · SIMULATED'
+[5 recorded] s5
+[5 recorded] s5b
+   PASS 5 recorded: 'HYPERION-MDA · RECORDED non-astronaut playback · s3_low_resistance_bike': 't = 0 s of 294 s · paused · RECORDED-NON-ASTRONAUT' -> 't = 3 s of 294 s · playing · RECORDED-NON-ASTRONAUT'
+   labels[recorded-player] required ['RECORDED', 'non-astronaut']: present; clinical-term hits: none
+   labels[recorded-browser] required ['non-astronaut']: present; clinical-term hits: none
+[6 hr] s6
+   PASS 6 hr: 19 rows in 3.1s
+   first row=('s1_high_resistance_bike', 'High resistance biking_level 6', '291', '291', '5.05', '-1.15')
+   last row=('s9_walk', 'Walking_3 km/h', '107', '107', '5.01', '-1.86')
+   labels[hr-check] required ['non-astronaut']: present; clinical-term hits: none
+[7 fl] s7
+   PASS 7 fl: summary='FL SIMULATION complete: 3 simulated clients (120 generated toy points in total), 5 rounds, seed 7. Each round:' rows=15
+   labels[fl] required ['SIMULATION']: present; clinical-term hits: none
+[8 switch] s8
+   PASS 8 switch: 4 windows open simultaneously: ['HYPERION-MDA · Channel panel (not a vali', 'HYPERION-MDA · SIMULATED wearable playba', 'HYPERION-MDA · RECORDED non-astronaut we', 'HYPERION-MDA · FL SIMULATION (toy data, ']
+[8 switch] s8b
+   PASS 8 switch: concurrent: sim 't = 0 s of 300 s · playing · SIMULATED'->'t = 10 s of 300 s · playing · SIMULATED', rec 't = 0 s of 588 s · playing · RECORDED-NON-ASTRONAUT'->'t = 2 s of 588 s · playing · RECORDED-NON-ASTRONAUT'
+   PASS 8 switch: main NASA table/status unchanged by other lanes
+   PASS 8 switch: all windows closed cleanly
+[8 switch] s8c
+   PASS 8 switch: NASA reload rows=531
+[8 switch] s8d
+   PASS 8 switch: reopened playback advances: 't = 5 s of 300 s · playing · SIMULATED'
+   PASS 8 switch: HR check rerun after switching: 19 rows
+[end] done
+
+Tk callback exceptions: 0
+Dialogs: none
+Event-loop max gap per step (s): start=0.08, 1 launch=0.06, 2 nasa=0.08, 3 channels=0.07, 4 sim=0.07, 5 recorded=0.09, 6 hr=3.02, 7 fl=0.06, 8 switch=1.43
+WORKFLOWS: 1 launch=PASS, 2 nasa=PASS, 3 channels=PASS, 4 sim=PASS, 5 recorded=PASS, 6 hr=PASS, 7 fl=PASS, 8 switch=PASS
+CONTINUOUS LIVE SESSION: PASS
+MAINLOOP EXITED CLEANLY after 23.0s

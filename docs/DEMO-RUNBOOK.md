@@ -1,5 +1,11 @@
 # HYPERION-MDA demo runbook (OSD-575 real-data candidate)
 
+> **Note (2026-11-15): for the mentor review, use [MENTOR-DEMO-GUIDE.md](MENTOR-DEMO-GUIDE.md).** It covers all four lanes and the M6 research experiment.
+>
+> This runbook still describes the NASA-lane walkthrough correctly, but parts of it predate the demo lanes, M5 and M6:
+> - **Test count:** it says "102 tests". The current suites are 173 in `tests/` plus 27 in `experiments/m6/tests/`.
+> - **"Is anything synthetic?" answer:** the app now also has a separate, clearly labelled SIMULATED playback lane.
+
 How to present the **candidate** build. Everything below describes behaviour in the current code, checked on 2026-11-14 (Windows 11, Python 3.14.2, 125% display scaling).
 
 > **What this is:** a tested local software prototype that downloads one **real, public** NASA OSDR file (OSD-575 serum Comprehensive Metabolic Panel), verifies it by SHA-256, imports it with a schema check, and shows each person's post-flight values **descriptively** against their own pre-flight values.

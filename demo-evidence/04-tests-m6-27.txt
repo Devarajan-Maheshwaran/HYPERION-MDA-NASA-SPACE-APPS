@@ -1,0 +1,34 @@
+> .venv\Scripts\python -m unittest discover -s experiments/m6/tests -v
+test_feature_extractor_takes_no_reference (test_m6.EcgExclusionTests.test_feature_extractor_takes_no_reference) ... ok
+test_features_unchanged_when_ecg_waveform_is_replaced_by_noise (test_m6.EcgExclusionTests.test_features_unchanged_when_ecg_waveform_is_replaced_by_noise) ... ok
+test_inputs_type_has_no_ecg_or_reference_field (test_m6.EcgExclusionTests.test_inputs_type_has_no_ecg_or_reference_field) ... ok
+test_reference_loader_never_reads_signals (test_m6.EcgExclusionTests.test_reference_loader_never_reads_signals) ... ok
+test_accel_features_have_no_raw_amplitude (test_m6.FeatureTests.test_accel_features_have_no_raw_amplitude) ... ok
+test_flat_window_is_degenerate_not_nan (test_m6.FeatureTests.test_flat_window_is_degenerate_not_nan) ... ok
+test_m5_peak_method_recovers_known_rate (test_m6.FeatureTests.test_m5_peak_method_recovers_known_rate) ... ok
+test_ppg_features_are_scale_invariant (test_m6.FeatureTests.test_ppg_features_are_scale_invariant) ... ok
+test_spectral_peak_recovers_known_frequency (test_m6.FeatureTests.test_spectral_peak_recovers_known_frequency) ... ok
+test_eight_disjoint_folds_cover_everyone_once (test_m6.FoldTests.test_eight_disjoint_folds_cover_everyone_once) ... ok
+test_fit_never_sees_test_participant_and_each_row_predicted_once (test_m6.FoldTests.test_fit_never_sees_test_participant_and_each_row_predicted_once) ... ok
+test_no_random_split_anywhere (test_m6.FoldTests.test_no_random_split_anywhere) ... ok
+test_overlapping_windows_stay_inside_their_record_and_fold (test_m6.FoldTests.test_overlapping_windows_stay_inside_their_record_and_fold) ... ok
+test_scaler_and_model_fitted_on_training_rows_only (test_m6.FoldTests.test_scaler_and_model_fitted_on_training_rows_only) ... ok
+test_bootstrap_is_seeded_and_over_participants (test_m6.MetricTests.test_bootstrap_is_seeded_and_over_participants) ... ok
+test_hr_stats (test_m6.MetricTests.test_hr_stats) ... ok
+test_macro_f1_hand_example (test_m6.MetricTests.test_macro_f1_hand_example) ... ok
+test_single_class_fold_macro_f1_is_na (test_m6.MetricTests.test_single_class_fold_macro_f1_is_na) ... ok
+test_logistic_gradient_and_separable_fit (test_m6.ModelTests.test_logistic_gradient_and_separable_fit) ... ok
+test_ridge_matches_closed_form_reference (test_m6.ModelTests.test_ridge_matches_closed_form_reference) ... ok
+test_trivial_baselines (test_m6.ModelTests.test_trivial_baselines) ... ok
+test_a1_is_the_frozen_m5_method (test_m6.RealDataPipelineTests.test_a1_is_the_frozen_m5_method) ... ok
+test_config_hash_recorded (test_m6.RealDataPipelineTests.test_config_hash_recorded) ... ok
+test_dataset_matches_audit (test_m6.RealDataPipelineTests.test_dataset_matches_audit) ... ok
+test_deterministic_and_matches_committed_outputs (test_m6.RealDataPipelineTests.test_deterministic_and_matches_committed_outputs) ... ok
+test_reported_metrics_match_raw_outputs (test_m6.RealDataPipelineTests.test_reported_metrics_match_raw_outputs) ... ok
+test_single_class_folds_reported_na (test_m6.RealDataPipelineTests.test_single_class_folds_reported_na) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 11.178s
+
+OK
+exit=0

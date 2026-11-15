@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-14 (OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded lane). The earlier frozen demo is preserved unchanged as `dist/HYPERION-MDA-Prototype.zip`.
+Updated 2026-11-15 (OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded lane + M6 LOPO baselines experiment). The earlier frozen demo is preserved unchanged as `dist/HYPERION-MDA-Prototype.zip`.
 
 | Capability | Status |
 |---|---|
@@ -18,7 +18,7 @@ Updated 2026-11-14 (OSD-575 candidate + M2 channel panel + demo lanes + M5 Physi
 | User-opened CSV (demo format) | Implemented, with an "unverified provenance" banner; see `docs/CSV-SCHEMA.md`. |
 | CSV validation, timestamp ordering, earlier-only baselines, unit allow-list, duplicates (R1) | Implemented (unchanged), for the user-CSV path. |
 | Time-series chart | Implemented: UTC axis for CSV data, mission-relative axis for OSDR data. Markers are not joined; timepoints with `NA` keep a visible empty slot. |
-| Tests | 173 `unittest` tests (102 before M2, 22 M2, 26 demo-lane, 23 M5 PhysioNet tests: gate/checksums, WFDB reader, real records, adapter, lane separation, HR check, GUI): engine, chart, packaging, OSDR source/schema/ordering/units/NA/baselines, fetch logic using `file://` URLs, and an end-to-end check on the real verified file through the UI data model, compared against an independent calculation. Software verification only. |
+| Tests | **200 `unittest` tests in total:** 173 in `tests/` and 27 M6 tests in `experiments/m6/tests/`. The M6 tests cover participant-leakage, ECG-exclusion, standardiser-boundary, model, metric and real-data pipeline checks, plus byte-identical reproducibility. The 173 in `tests/` are 102 before M2, 22 M2, 26 demo-lane and 23 M5 PhysioNet tests: gate/checksums, WFDB reader, real records, adapter, lane separation, HR check, GUI): engine, chart, packaging, OSDR source/schema/ordering/units/NA/baselines, fetch logic using `file://` URLs, and an end-to-end check on the real verified file through the UI data model, compared against an independent calculation. Software verification only. |
 | Visual inspection | Done on Windows 11 (125% scaling) at the 900×740 minimum and maximised, with the real OSDR data. |
 | Window sized to fit the screen | Implemented. Maximise if Windows places the window low on the screen (see the runbook). |
 | **M2: signal registry** (`signal_registry.py`) | **Implemented.** 41 channels, each with exactly one status (MEASURED-LAB-SAMPLE / RECORDED-NON-ASTRONAUT / SIMULATED / UNAVAILABLE), a lane, and a source/provenance description. The registry holds **no values**. The 19 OSD-575 analytes are MEASURED-LAB-SAMPLE, grouped under "Blood serum (laboratory sample)", with their sparse collection labels (L-92 … R+194; no clock times). The 10 WESAD channels are UNAVAILABLE pending the WESAD gate (not downloaded, redistributed or trained on). Bio-Monitor signals, cuff BP, sleep, PVT, ONSD and cabin ppCO2/radiation/pressure are UNAVAILABLE with no values. There are no SIMULATED or RECORDED channels in this build. `validate_registry()` enforces the lane and status rules. |
@@ -32,7 +32,19 @@ Updated 2026-11-14 (OSD-575 candidate + M2 channel panel + demo lanes + M5 Physi
 - **`RecordedPhysioNetAdapter`** sits behind `WearableAdapter`, with 5 RECORDED-NON-ASTRONAUT registry channels and the playback window.
 - **HR methods check** (`dsp_hr.py`, numpy/scipy in `.venv` only): PPG peak-interval rate vs the reference ECG beats. The parameters were fixed before results; the output is measured and deterministic, and shown as-is.
 - **Known limitations:** the wrist timestamp channel (60 s rollover with whole-second jumps) isn't used, so the time base is the uniform 256 Hz index. Amplitudes are header-declared, not calibrated. n = 8. |
-| **Blocked / not implemented** | **WESAD gate: NO-GO** (`docs/DATA-SOURCE-INVENTORY.md` §3.3); no WESAD download or training. **No model training on PhysioNet yet** (that's M6, LOPO baselines, after approval). No astronaut wearable data (none public). Not implemented: real device adapters, Flower, real multi-site FL, differential privacy, model training on any real data, clinical functionality, NASA/CSA integration. |
+| **M6: LOPO baselines on PhysioNet Wrist PPG (offline experiment)** | **Implemented, run and verified (2026-11-15).** This is not in the desktop app. Code, frozen config and outputs are in `experiments/m6/`; protocol in `docs/M6-LOPO-PROTOCOL.md`; results in `docs/M6-RESULTS-SUMMARY.md` and `docs/M6-TECHNICAL-REVIEW.md`.
+- **Design:** 8-fold leave-one-participant-out; fixed hyperparameters; numpy/scipy linear models; ECG used as the reference only.
+- **Measured, heart rate:** no method beat a no-signal training-mean predictor. MAE 24.18 bpm for that predictor vs 23.67 for the frozen M5 method; the ridge models were 30.06–32.22.
+- **Measured, activity (walk / run / cycle):** accelerometer logistic regression scored 0.733 accuracy and 0.731 macro-F1, vs 0.451 / 0.207 for the majority class.
+- **PPG vs accelerometer:** no evidence at n = 8 that PPG adds information beyond the accelerometer features.
+- **Verification:** an independent verifier recomputed the metrics from the raw CSVs (1187 checks passed). |
+| **Blocked / not implemented** | **WESAD gate: NO-GO** (`docs/DATA-SOURCE-INVENTORY.md` §3.3); no WESAD download or training. No astronaut wearable data (none public). **No validated heart-rate algorithm:** the M6 baselines did not beat a no-signal predictor. M7 (motion-artifact-resistant HR) is a **proposal only** (`docs/M7-PROPOSAL.md`). **Not implemented:**
+- real device adapters
+- Flower, or real multi-site FL
+- differential privacy
+- training beyond the M6 linear baselines
+- clinical functionality
+- NASA/CSA integration |
 | Wearable / continuous telemetry ingestion | **Not implemented.** No open astronaut wearable dataset was identified. WESAD (terrestrial lab study) is planned for a methods demonstration only, gated on confirming its current terms. |
 | WESAD or other terrestrial datasets | Not implemented. |
 | OSD-570 / OSD-571 data | Not used. They are sequencing and proteomics/metabolomics data, not telemetry. |
