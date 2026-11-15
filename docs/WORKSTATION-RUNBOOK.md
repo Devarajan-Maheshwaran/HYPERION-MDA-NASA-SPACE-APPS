@@ -154,7 +154,7 @@ the audit chain and adding two `CASE_RESET_*` blocks.
 ```bash
 python3 scripts/run_fl_dp_benchmark.py --quick    # smoke config, writes nothing
 python3 scripts/run_fl_dp_benchmark.py            # full run, writes artifacts/
-python3 scripts/run_fl_dp_benchmark.py --verify   # recompute and compare byte-for-byte
+python3 scripts/run_fl_dp_benchmark.py --verify   # recompute; compare all but git_head
 ```
 
 Reads only committed M6 CSVs, needs no network, and the UI renders the JSON through
@@ -219,7 +219,7 @@ Do not host this with real PHI.
 ```bash
 # existing suites, unchanged
 PYTHONPATH=src python -m unittest discover -s tests
-PYTHONPATH=src .venv/bin/python -m unittest discover -s experiments/m6/tests
+PYTHONPATH=src .venv-api/bin/python -m unittest discover -s experiments/m6/tests
 python experiments/m6/verify_m6.py
 
 # API suite (152 tests + subtests, pytest)
@@ -234,7 +234,7 @@ cd web && npm run typecheck && npm test && npm run build
 # end-to-end against a RUNNING server (58 checks)
 python scripts/smoke_workstation.py --base http://127.0.0.1:8000
 
-# measured FL/DP artifact: reproduce and verify byte-for-byte
+# measured FL/DP artifact: reproduce and verify (git_head metadata excluded)
 python scripts/run_fl_dp_benchmark.py --verify
 ```
 

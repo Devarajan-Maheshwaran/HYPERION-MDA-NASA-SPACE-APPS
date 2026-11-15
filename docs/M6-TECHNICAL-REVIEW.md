@@ -282,7 +282,7 @@ Each number that matched none of these was examined and listed in the validation
 
 ## 12. Next research questions
 
-1. **Can motion-artifact-aware methods beat the no-signal baseline?** Under the same LOPO design, can a method that uses the accelerometer to suppress motion components in the PPG spectrum beat A0, not just A1? Proposed as **M7** in [M7-PROPOSAL.md](M7-PROPOSAL.md).
+1. **Can motion-artifact-aware methods beat the no-signal baseline?** Under the same LOPO design, can a method that uses the accelerometer to suppress motion components in the PPG spectrum beat A0, not just A1? This remains a proposed follow-up question; no M7 implementation or result exists.
 2. **Does temporal tracking help?** HR changes slowly between consecutive 2 s steps; does a continuity constraint fix the half-rate and double-rate errors seen in running?
 3. **Is the activity "signal" really activity?** How much of B1's accuracy survives speed-matched or participant-balanced analysis? That needs data with more participants per activity.
 4. **Do the findings replicate?** Would they hold on a second, independently collected wrist-PPG exercise dataset? Any such dataset must pass the same terms-and-documentation gate as PhysioNet and WESAD; none has been verified yet.

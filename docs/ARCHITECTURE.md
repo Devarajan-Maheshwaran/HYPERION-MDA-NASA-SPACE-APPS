@@ -1,5 +1,7 @@
 # Architecture: current build and MVP target
 
+> **Historical desktop-era reference.** Retained because the frozen M6 protocol and traceability map cite it. For the current web workstation, use `README.md`, `docs/API-CONTRACT.md`, `docs/FRONTEND-DESIGN.md` and `docs/WORKSTATION-RUNBOOK.md`.
+
 The PPT (`HYPERION_MDA_NASA_SpaceApps_SIH_Template.pptx`) describes a five-layer onboard system. This document separates **what exists** from **the realistic MVP target** and **what stays out of scope**. Every PPT element is mapped in `docs/REQUIREMENTS-TRACEABILITY.md` Part A.
 
 ## 1. Current build (implemented and tested)

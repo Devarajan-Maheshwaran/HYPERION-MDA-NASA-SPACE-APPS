@@ -1,5 +1,7 @@
 # Phased model-training plan (MVP)
 
+> **Historical WESAD plan.** Retained for the traceability acceptance-criteria references. WESAD remains NO-GO. The executed participant-separated experiment is M6 on PhysioNet (`docs/M6-LOPO-PROTOCOL.md`), and the measured FL/DP benchmark is `scripts/run_fl_dp_benchmark.py`.
+
 **Status: the WESAD plan below is still a plan only.** No WESAD model has been trained, and the WESAD gate is NO-GO. The numbers below are design parameters to fix *before* looking at test results, not findings.
 
 > **Update 2026-11-15.** The LOPO evaluation pattern of this plan has been carried out on a *different* dataset: PhysioNet Wrist PPG During Exercise, as build milestone **M6**.

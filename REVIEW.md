@@ -1,5 +1,7 @@
 # HYPERION-MDA repository review
 
+> **Historical snapshot.** This review predates the live web workstation and the later R1–R6 fixes. Use `README.md`, `docs/WORKSTATION-RUNBOOK.md` and `docs/IMPLEMENTATION-STATUS.md` for the current build. R3 below is retained as a finding and marked resolved.
+
 **Reviewed commit:** `0c06fbf9d813db6f15a4fa968efc55154c99312c`  
 **Branch:** `arena/da7479f7-hyperion-mda-nasa-space-apps` (branched from `150b1f84b173e601b90b2cf7c5fea88c69bb1b64`)  
 **Review date:** 2026-11-14 UTC (session date). Several repository artifacts carry 2026-11-15 timestamps; those are repository-reported dates, not independently verified event times.
@@ -28,7 +30,7 @@ The main conclusions are:
 3. **The GUI and real-data end-to-end paths were not reproduced here.** Tkinter is absent and both dataset downloads fail with TLS EOF. Historical screenshots and an eight-workflow acceptance log exist, but are not a substitute for a portable rerun.
 4. **M6 is credible as a small offline methods experiment, not as a validated heart-rate or astronaut-health model.** No HR method demonstrated improvement over the no-signal baseline. Activity classification improved over majority prediction on this terrestrial dataset, with substantial participant-specific failures.
 5. **There is no HTTP backend, browser frontend, container deployment, CI workflow, production audit log, differential privacy, Flower integration, clinical FSM or agency/device integration.** These are scope gaps, not bugs in the explicitly local prototype.
-6. **Documentation is mostly careful but needs reconciliation:** stale channel/test counts, an absent referenced ZIP, a non-portable acceptance script, and inconsistent wording about redistribution of derived PhysioNet outputs.
+6. **Documentation is mostly careful but needs reconciliation:** stale channel/test counts, an absent referenced ZIP, a then-non-portable acceptance script (R3, now resolved), and inconsistent wording about redistribution of derived PhysioNet outputs.
 
 No Critical finding was established. That is not a safety approval.
 
@@ -38,7 +40,7 @@ No Critical finding was established. That is not a safety approval.
 |---|---|---|---|---|
 | R1 | High | Confirmed defect | Wrong-`TEST_TYPE` rows are flagged at `src/hyperion_mda/osdr_cmp.py:172–174`, but baseline eligibility does not check that rejection condition (`src/hyperion_mda/engine.py:301–304`). A synthetic CBC baseline was used in a CMP z-score. | Add an explicit eligibility/rejection reason; exclude wrong-type baselines and observations; add regression tests for both roles. |
 | R2 | Medium | Reproducibility gap | Core packaging declares no dependencies (`pyproject.toml:5–13`), while HR/M6 require manually installed, unpinned NumPy/SciPy (`README.md:68–81`). No lockfile or CI matrix is tracked. Provenance hashes raw checkout bytes, making the manifest hash line-ending-sensitive. | Declare an optional numeric extra with tested bounds, lock the experiment environment, document the OS-level Tk requirement, and define canonical provenance hashing. |
-| R3 | Medium | Evidence portability | The live acceptance harness hardcodes `C:\NASA SPACE APP CHALLENGE\src` (`demo-evidence/live_acceptance_script.py:9`). The GUI could not run in this Linux environment. | Derive paths from `__file__`, provide a cross-platform setup/run command, and rerun on a Tk-capable machine with both verified caches. |
+| R3 | Medium | Evidence portability — **resolved** | The reviewed harness hardcoded a Windows source path. The current `demo-evidence/live_acceptance_script.py` derives `REPO_ROOT` from `__file__` and exits 2 with setup hints when Tk/display/caches are missing. The GUI still could not run in this Linux environment. | Rerun on a Tk-capable machine with both verified caches. |
 | R4 | Medium | Data-governance inconsistency | Derived per-participant/window features and predictions are tracked under `experiments/m6/outputs/` (`experiments/m6/run_m6.py:302–315`), while several docs say the project does not redistribute PhysioNet data. The output location was an approved deviation (`docs/M6-LOPO-PROTOCOL.md:15–25`). | Explicitly distinguish raw recordings from derived open-data artifacts; confirm attribution/license handling and update the blanket wording. This is not an established astronaut-data leak. |
 | R5 | Medium | UI responsiveness | The HR check runs synchronously on the Tk callback thread (`src/hyperion_mda/recorded_view.py:86–105`). The historical acceptance log measured a 3.02 s event-loop gap (`demo-evidence/06-live-acceptance.txt:48–50`). | Move computation to a worker with cancellation/progress and marshal UI updates back to Tk. Keep this labeled as a methods check, not monitoring. |
 | R6 | Low | Documentation drift | Status still says 41 channels in one row; actual registry has 49. M6 now has 28 tests, not 27. Several guides reference an absent `dist/HYPERION-MDA-Prototype.zip`. | Generate counts from source or update them together; remove/qualify unavailable archive references; mark historical sections clearly. |
@@ -136,7 +138,7 @@ The input had baselines 80 (wrong type), 82 and 84, then observation 100. The wr
 | ε = 2.5, δ = 10⁻⁴ | Concept text `:389–403` | No | Design parameters, not an accountant result or privacy guarantee. |
 | ENMO 0.31, HR 115/125 action rule, 38 °C rule, kurtosis gate, radiation shelter trigger | Targeted source/concept searches | No | No implemented rule found. HR >125 appears in proposed/unverified traceability text, not runtime logic. |
 
-The concept's F1, false-alarm, coverage and Byzantine-resilience benchmarks are also unsupported as product results (`docs/HYPERION-MDA-CONCEPT-AS-PROVIDED.txt:414–437`; `docs/REQUIREMENTS-TRACEABILITY.md:354–358`). The validation plan explicitly forbids recycling those reported numbers as measured outcomes (`docs/VALIDATION-PLAN.md:20`).
+The concept's F1, false-alarm, coverage and Byzantine-resilience benchmarks are also unsupported as product results (`docs/HYPERION-MDA-CONCEPT-AS-PROVIDED.txt:414–437`; `docs/REQUIREMENTS-TRACEABILITY.md:354–358`). The retained validation reference explicitly forbids recycling those reported numbers as measured outcomes (`reference-material/02-Architecture-and-Validation.md`, claims table).
 
 **Safety verdict:** no clinical FSM, triage, diagnosis, treatment recommendation, countermeasure trigger, conformal safety gate, exertion alarm suppression or flight-surgeon workflow exists. The correct claim is a non-clinical research prototype.
 
@@ -338,7 +340,7 @@ All commands below were run from the repository root unless a different working 
 | `python experiments/m6/run_m6.py` (system Python) | NumPy import failure | 1 |
 | `HYPERION_MDA_DATA_DIR=/tmp/hyperion-review-cache PYTHONPATH=src /tmp/hyperion-review-venv/bin/python experiments/m6/run_m6.py /tmp/hyperion-review-m6-outputs` | `PhysioNetMissingError` / `AdapterError`: `s1_high_resistance_bike.hea was not found…` | 1 |
 | `PYTHONPATH=src HYPERION_MDA_DATA_DIR=/tmp/hyperion-review-cache /tmp/hyperion-review-venv/bin/python -c 'from hyperion_mda import dsp_hr; dsp_hr.run_check()'` | Same missing verified PhysioNet header, surfaced as `AdapterError` | 1 |
-| `python demo-evidence/live_acceptance_script.py` | Tkinter import failure; script also contains a hardcoded Windows path | 1 |
+| `python demo-evidence/live_acceptance_script.py` | Tkinter import failure; the reviewed script also contained a hardcoded Windows path (now repository-relative) | 1 |
 
 The explicit M6 output argument was used to avoid overwriting tracked outputs. The run failed on missing input before writing results.
 
@@ -435,7 +437,7 @@ Output is recorded in B.2. This probe used synthetic rows only and wrote only to
 | `demo-evidence/06-live-acceptance.txt` | 8/8 workflows PASS; 0 Tk callback exceptions; 0 dialogs; clean mainloop exit | Historical; GUI not runnable here |
 | `demo-evidence/screenshots/` | Eight documented workflow screenshots | Inspected as repository evidence, not live capture here |
 
-The evidence pack is useful and internally consistent with its stated environment. Its authenticity cannot be independently established from text logs alone, and the hardcoded acceptance-script path limits reproducibility.
+The evidence pack is useful and internally consistent with its stated environment. Its authenticity cannot be independently established from text logs alone. The reviewed hardcoded acceptance-script path limited reproducibility; the current harness is repository-relative.
 
 ## H.4 Coverage gaps
 
@@ -464,12 +466,12 @@ The tests cover many validation, ordering, checksum, adapter, registry, lane-sep
 ## I.3 Specific documentation corrections
 
 1. `README.md:9` and `docs/IMPLEMENTATION-STATUS.md:3` reference `dist/HYPERION-MDA-Prototype.zip`; that file is absent from this checkout. `dist/` is ignored (`.gitignore:6`). Remove the claim or provide an authorized, checksum-identified artifact location.
-2. `docs/IMPLEMENTATION-STATUS.md:24` still describes 41 channels/no simulated or recorded channels. The actual count is 49; `README.md:66` and the registry agree. The showcase guide already acknowledges this stale row (`docs/SHOWCASE-REHEARSAL-GUIDE.md:205–207`).
+2. `docs/IMPLEMENTATION-STATUS.md:24` still describes 41 channels/no simulated or recorded channels. The actual count is 49; `README.md:66` and the registry agree. The current README and registry agree on 49 channels.
 3. M6 references to 27 tests are historical; current code has 28 (`experiments/m6/tests/test_m6.py:293–296` adds the portability-era provenance-presence test). Update guides or label the old count as pre-commit evidence.
-4. `docs/DEMO-RUNBOOK.md:3–7` correctly warns that it is partly superseded, but its old 102-test instructions remain easy to copy accidentally. Prefer the mentor guide and make the historical status unmistakable.
+4. The superseded desktop demo runbook was removed during cleanup; use `docs/MENTOR-DEMO-GUIDE.md` for the desktop lane and `docs/WORKSTATION-RUNBOOK.md` for the web workstation.
 5. Older traceability sections describe a synthetic-only/no-network state (for example `docs/REQUIREMENTS-TRACEABILITY.md:201–206,283–286`). Current code has real NASA/PhysioNet lanes and explicit fetches. Mark Part B as historical or reconcile it with Part A/current status.
 6. Reconcile “never redistributes” wording with the tracked derived M6 outputs, as discussed in G.3.
-7. Replace the acceptance harness's hardcoded Windows path with a repository-relative path and document a cross-platform invocation.
+7. Resolved: the acceptance harness now uses a repository-relative path and documents a cross-platform invocation.
 
 ## I.4 Prioritized remediation plan
 

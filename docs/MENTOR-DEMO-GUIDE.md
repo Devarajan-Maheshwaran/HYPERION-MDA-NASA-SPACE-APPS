@@ -27,7 +27,7 @@ The request for this demo listed six capabilities. Here is what exists for each,
 
 ## 1. Before the session (needs internet once; about 10 minutes)
 
-Run all commands in a terminal in the project root, `C:\NASA SPACE APP CHALLENGE`, unless the step says otherwise.
+Run all commands in a terminal in the repository root unless the step says otherwise. The captured session used Windows; on Linux/macOS use `.venv/bin/python` (or `.venv-api/bin/python`) and forward slashes.
 
 **1. Check the environment** (no installs; numpy and scipy are already in `.venv`):
 
@@ -186,7 +186,7 @@ Run the commands in section 3. Then open `experiments/m6/outputs/report.md` and 
 
 ### Step 8: Close with findings and limitations (1.5 min)
 
-Use sections 4 and 5. End with the M7 proposal ([M7-PROPOSAL.md](M7-PROPOSAL.md)), which is **not implemented**.
+Use sections 4 and 5. End with the limits: motion-artifact-resistant HR is a proposed follow-up, **not implemented**.
 
 ---
 

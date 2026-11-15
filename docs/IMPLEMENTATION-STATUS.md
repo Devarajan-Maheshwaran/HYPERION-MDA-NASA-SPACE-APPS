@@ -4,9 +4,11 @@ Updated 2026-11-14 (live crew cockpit wave): backend-owned 1 Hz mission clock + 
 SQLite case persistence with verified restart resume, persisted S0–S4 workflow, store-and-
 forward surgeon outbox with blackout/delay/hashed receipts, recorded-non-astronaut replay,
 OSD-575/GOES provenance panels, measured FL/DP benchmark artifact + Docs rendering,
-Dockerfile/compose/healthcheck and `run_workstation.sh --offline`. Verification: tests_api
-152 passed + 79 subtests; full pytest 324 passed / 41 skipped / 207 subtests; web 48 tests /
-10 files + typecheck + build; HTTP smoke 58/58; FL/DP `--verify` byte-for-byte. Docker image
+Dockerfile/compose/healthcheck and `run_workstation.sh --offline`. Verification in the
+current Linux environment: tests_api 152 passed + 79 subtests; full pytest 316 passed /
+49 skipped / 207 subtests (skips are Tkinter/raw-cache dependent); web 48 tests /
+10 files + typecheck + build; HTTP smoke 58/58; FL/DP `--verify` reproduces the artifact
+except moving `git_head` metadata. Docker image
 not built here (no daemon); real-browser Playwright still unavailable.
 
 Prior: OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded lane + M6 LOPO baselines experiment, with the review R1 assay-rejection fix and the R3/R6 documentation reconciliation applied afterwards.
@@ -51,20 +53,14 @@ Prior: OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded
 - **Measured, activity (walk / run / cycle):** accelerometer logistic regression scored 0.733 accuracy and 0.731 macro-F1, vs 0.451 / 0.207 for the majority class.
 - **PPG vs accelerometer:** no evidence at n = 8 that PPG adds information beyond the accelerometer features.
 - **Verification:** an independent verifier recomputed the metrics from the raw CSVs (1187 checks passed). |
-| **Blocked / not implemented** | **WESAD gate: NO-GO** (`docs/DATA-SOURCE-INVENTORY.md` §3.3); no WESAD download or training. No astronaut wearable data (none public). **No validated heart-rate algorithm:** the M6 baselines did not beat a no-signal predictor. M7 (motion-artifact-resistant HR) is a **proposal only** (`docs/M7-PROPOSAL.md`). **Not implemented:**
-- real device adapters
-- Flower, or real multi-site FL
-- differential privacy
-- training beyond the M6 linear baselines
-- clinical functionality
-- NASA/CSA integration |
-| Wearable / continuous telemetry ingestion | **Not implemented.** No open astronaut wearable dataset was identified. WESAD (terrestrial lab study) is planned for a methods demonstration only, gated on confirming its current terms. |
-| WESAD or other terrestrial datasets | Not implemented. |
+| **Blocked / not implemented** | **WESAD gate: NO-GO** (`docs/DATA-SOURCE-INVENTORY.md` §3.3); no WESAD download or training. No astronaut wearable data (none public). **No validated heart-rate algorithm:** the M6 baselines did not beat a no-signal predictor. Motion-artifact-resistant HR is a **proposal only**; no M7 code or result exists. **Not implemented:** real device adapters; Flower or real multi-site FL; participant-level DP; training beyond the M6 linear baselines and the measured NumPy FL/DP benchmark; clinical validation; NASA/CSA system integration. |
+| Wearable / continuous telemetry ingestion | **No live astronaut wearable ingestion.** The web workstation runs labelled simulated scenarios and committed PhysioNet recorded replay; no device adapter is connected. |
+| WESAD or other terrestrial datasets | WESAD: NO-GO, not downloaded or trained. PhysioNet Wrist PPG: implemented recorded lane and M6 outputs. |
 | OSD-570 / OSD-571 data | Not used. They are sequencing and proteomics/metabolomics data, not telemetry. |
 | Kalman baselines, exertion residualizer, conformal / MC-dropout uncertainty, neural models | Not implemented. |
-| Clinical state machine or protocols (NASA-STD-3001, CSA) | Not implemented. |
-| Ultrasound / ONSD, PVT, point-of-care instruments, digital twin | Not implemented. |
-| Federated learning / differential privacy | Not implemented. |
+| Clinical state machine or protocols (NASA-STD-3001, CSA) | **Demo S0–S4 workflow implemented** in the web workstation; no clinical protocol or standards compliance. |
+| Ultrasound / ONSD, PVT, point-of-care instruments, digital twin | **Demo PVT timer, manual ONSD caliper and keyboard vitals implemented** in the web workstation; no automated diagnosis or validated instrument. The desktop channel panel is not a physiological digital twin. |
+| Federated learning / differential privacy | **Measured single-process NumPy FedAvg/DP-SGD benchmark implemented** (`artifacts/fl_dp_benchmark_results.json`), window-level threat model only. No Flower, Opacus, real habitat clients or participant-level DP. |
 | Blockchain or cryptographic ledger | Not implemented. |
 | Sensor, spacecraft or NASA/CSA system integration | Not implemented. |
 | Encryption, authentication, standards compliance, clinical validation, flight qualification | Not implemented or established. |
