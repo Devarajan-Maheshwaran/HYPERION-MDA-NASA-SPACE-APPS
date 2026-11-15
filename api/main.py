@@ -11,6 +11,7 @@ import json
 import os
 import statistics
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -62,6 +63,7 @@ class Store:
         self.running = False
         self.frames: list[Frame] = []
         self.subscribers: list[asyncio.Queue] = []
+        self.loop: asyncio.AbstractEventLoop | None = None
         self.subjects = {
             "demo-crew-1": "Demo crew member 1 (SIMULATED)",
             "demo-crew-2": "Demo crew member 2 (SIMULATED)",
@@ -78,19 +80,42 @@ class Store:
         return self.checks.get(subject_id, [])
 
     def broadcast(self, frame: Frame) -> None:
+        """Hand a frame to every SSE subscriber.
+
+        Sync endpoints run in a worker thread, so the queue must be filled on the event
+        loop's own thread via call_soon_threadsafe. Calling put_nowait directly from here
+        left the waiting loop asleep and no frame was ever delivered.
+        """
+        loop = self.loop
         for queue in list(self.subscribers):
-            try:
-                queue.put_nowait(frame)
-            except asyncio.QueueFull:
-                pass
+            def put(target: asyncio.Queue = queue) -> None:
+                try:
+                    target.put_nowait(frame)
+                except asyncio.QueueFull:
+                    pass
+            if loop is not None and loop.is_running():
+                loop.call_soon_threadsafe(put)
+            else:
+                put()
 
 
 def create_app(audit_path: Path | None = None) -> FastAPI:
+    store = Store(audit_path)
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        # Capture the loop so worker-thread endpoints can wake SSE subscribers safely.
+        store.loop = asyncio.get_running_loop()
+        yield
+        store.subscribers.clear()
+        store.loop = None
+
     app = FastAPI(
         title="HYPERION-MDA Workstation API",
         version=__version__,
         description=("Composition layer above the NASA lab, SIMULATED and RECORDED lanes. "
                      + DISCLAIMER),
+        lifespan=lifespan,
     )
     # The Vite dev server proxies /api, so same-origin in production. Permissive here
     # because this is a local demo with demo-grade auth (docs/SAFETY_ISSUES.md S10).
@@ -98,7 +123,6 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
         CORSMiddleware, allow_origins=["*"], allow_credentials=False,
         allow_methods=["*"], allow_headers=["*"],
     )
-    store = Store(audit_path)
     app.state.store = store
 
     def role_of(x_role: str | None) -> str:

@@ -1,5 +1,17 @@
 # HYPERION-MDA — OSD-575 real-data candidate
 
+> **New: the web workstation (API + React frontend).** A FastAPI composition layer and a
+> React 18 / TypeScript-strict / Vite / Tailwind / Recharts console implement the crew-health
+> workstation from the concept deck: live streaming vitals, the deterministic three-stage
+> trust gate, a six-system body map, crew checks with a live reaction test, a surgeon alert
+> queue and a tamper-evident audit chain.
+> **Run it:** [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
+> **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md).
+> **Safety deviations from the deck:** [docs/SAFETY_ISSUES.md](docs/SAFETY_ISSUES.md) — read this
+> before presenting. Gate 1 ships uncalibrated, activity is per-person scale-normalised (not
+> ENMO in g), non-rate findings are never suppressed, and no treatment advice is issued.
+> The existing desktop app, data modules, M6 experiment and their tests are **unchanged**.
+
 A local desktop prototype that loads **real, public NASA OSDR data** (study OSD-575), verifies the file against a recorded SHA-256, imports it with a schema check, and shows a **descriptive** comparison of each person's post-flight serum values against their own pre-flight values.
 
 This is a tested software prototype. It is **not** a medical device or diagnostic system. It has **no** clinical validation, NASA approval, standards compliance or flight readiness, and it makes no claims about model performance.

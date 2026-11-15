@@ -175,6 +175,13 @@ def gate2_exercise(inp: GateInput, cal: Calibration, residual: float | None,
     if latched or hold_s >= MAX_SUPPRESSION_HOLD_S:
         return GateVerdict(gate=2, outcome="PASS", reason="suppression hold timeout",
                            evidence=evidence)
+    # BLOCK means "an alarm that would otherwise fire is being suppressed". If the rate is
+    # not in the alert band there is nothing to block, and claiming a block would be
+    # misleading in the UI.
+    if inp.hr_bpm <= REST_TACHYCARDIA_BPM:
+        return GateVerdict(gate=2, outcome="PASS",
+                           reason="rate below the demo alert band; nothing to block",
+                           evidence=evidence)
     elevated = inp.activity_norm >= ACTIVITY_ELEVATED_NORM
     # One-sided: a rate at or below what the workload predicts is explained by it. A rate
     # ABOVE the prediction by more than the personal band is not, however hard the exercise.
