@@ -243,7 +243,7 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
         store.calibrations[subject_id] = cal
         store.holds.pop(subject_id, None)
         store.audit.append("calibration.create", role, subject_id, "SIMULATED",
-                           {"n_windows": cal.n_windows, "rest_hr_median": hr_med})
+                           {"n_windows": cal.n_windows})
         return _envelope(lane="SIMULATED", provenance=cal.source, calibration=cal.model_dump())
 
     @app.delete("/api/calibration/{subject_id}")
@@ -299,7 +299,7 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
                             recorded_at=_now(), source="15 s reaction test (crew, demo)")
         store.checks.setdefault(subject_id, []).append(check)
         store.audit.append("pvt.result", role, subject_id, "INJECTED",
-                           {"median_ms": median, "n": len(values)})
+                           {"n": len(values)})
         return _envelope(lane="INJECTED", provenance=check.source, median_ms=median,
                          n=len(values), lapses_over_350ms=sum(v > 350 for v in values),
                          check=check.model_dump(),
@@ -331,10 +331,29 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
                         slew=slew_rate(raw["window"], 25.0), calibrated=cal.calibrated)
         checks = store.checks_for(store.subject_id)
         stale = raw["stale_manual"] or any_stale(checks)
-        tau_min = 0.1 if raw["stale_manual"] else min_tau(checks)
+        ws = getattr(store, "ws", {})
+        if ws.get("scenario_key") and checks:
+            tau_min = min_tau(checks)
+        else:
+            tau_min = 0.1 if raw["stale_manual"] else min_tau(checks)
+        co2 = ws.get("co2_mmhg") if ws.get("scenario_key") else None
+        onsd_check = next((c for c in sorted(checks, key=lambda c: c.recorded_at, reverse=True)
+                           if c.kind == "onsd"), None)
+        onsd_tau = None
+        if onsd_check is not None:
+            from .organs import age_hours, tau
+            age = age_hours(onsd_check)
+            onsd_tau = tau(age) if age is not None else None
+        flags = list(raw["non_rate_flags"])
+        if ws.get("scenario_key") and ws.get("proton_mgy_day") is not None and ws["proton_mgy_day"] > 2.0:
+            flags.append("SIMULATED proton dose > 2 mGy/day (demo chest/immune rule)")
+        temp_check = next((c for c in sorted(checks, key=lambda c: c.recorded_at, reverse=True)
+                           if c.kind == "temperature"), None)
+        if ws.get("scenario_key") and temp_check is not None and temp_check.value is not None and temp_check.value >= 38.0:
+            flags.append("crew-entered temperature >= 38 degC (demo chest/immune rule)")
         inp = GateInput(t_s=t_s, hr_bpm=raw["hr_bpm"], activity_norm=activity, sqi=sqi,
-                        non_rate_flags=raw["non_rate_flags"], stale_manual=stale,
-                        min_tau=tau_min, hr_status="OK")
+                        non_rate_flags=flags, stale_manual=stale,
+                        min_tau=tau_min, hr_status="OK", co2_mmhg=co2, onsd_tau=onsd_tau)
         frame = evaluate(inp, cal, store.hold(store.subject_id))
         frame.lane = raw["lane"]
         frame.subject_id = store.subject_id
@@ -454,8 +473,10 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
         alert.acknowledged_by = role
         alert.acknowledged_at = _now()
         alert.ack_note = str(payload.get("note", ""))[:500]
+        import hashlib
+        note_hash = hashlib.sha256((alert.ack_note or "").encode("utf-8")).hexdigest()
         store.audit.append("alert.ack", role, alert.subject_id, alert.lane,
-                           {"alert_id": alert_id, "note": alert.ack_note})
+                           {"alert_id": alert_id, "note_sha256": note_hash})
         return _envelope(lane=alert.lane, alert=alert.model_dump())
 
     @app.get("/api/audit")
@@ -468,6 +489,11 @@ def create_app(audit_path: Path | None = None) -> FastAPI:
     def verify_audit() -> dict:
         return _envelope(provenance="local SHA-256 hash chain (not a blockchain)",
                          **store.audit.verify())
+
+    # ---------------- unified live workstation (dual-mode, exams, state) ----------------
+    from .workstation import register_workstation
+    register_workstation(app, store, frame_at=_frame_at, maybe_alert=_maybe_alert,
+                         envelope=_envelope, now=_now, require=require, role_of=role_of)
 
     # ---------------- static web build ----------------
     dist = REPO_ROOT / "web" / "dist"

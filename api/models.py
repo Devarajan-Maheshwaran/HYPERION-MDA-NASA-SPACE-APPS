@@ -106,6 +106,8 @@ class OrganReading(BaseModel):
     hazard: str = ""
     staleness_tau: float | None = None
     age_hours: float | None = None
+    z_score: float | None = None
+    baseline_note: str = "No personal baseline for this indicator; z_t not available."
     action: str = ""
     evidence: str = ""
 

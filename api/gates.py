@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 from .actions import (CHECK_SENSOR, CONTACT_FLIGHT_SURGEON, REPEAT_MEASUREMENT,
                       REST_AND_RECHECK, actions_for)
+from .context import CO2_EYE_HOLD_MMHG, co2_hr_drive
 from .models import Calibration, Frame, GateVerdict, SqReading
 
 # --- Declared demo limits. Not clinical thresholds. See docs/SAFETY_ISSUES.md S4. ---
@@ -108,6 +109,8 @@ class GateInput:
     stale_manual: bool = False
     min_tau: float | None = None
     hr_status: str = "UNKNOWN"
+    co2_mmhg: float | None = None
+    onsd_tau: float | None = None
 
 
 def gate1_sensor(inp: GateInput, cal: Calibration) -> GateVerdict:
@@ -151,6 +154,8 @@ def gate2_exercise(inp: GateInput, cal: Calibration, residual: float | None,
         "non_rate_flags": list(inp.non_rate_flags),
         "calibrated": cal.calibrated,
         "hold_latched": latched,
+        "co2_mmhg": inp.co2_mmhg,
+        "co2_hr_drive_bpm": round(co2_hr_drive(inp.co2_mmhg), 3),
     }
     # S3: a non-rate finding is never explained away by movement.
     if inp.non_rate_flags:
@@ -202,6 +207,9 @@ def gate3_uncertainty(inp: GateInput, cal: Calibration, would_alert: bool) -> Ga
         "hold_tau_threshold": STALE_TAU_HOLD,
         "would_alert": would_alert,
         "band": "empirical residual quantile (demo, no coverage guarantee)",
+        "co2_mmhg": inp.co2_mmhg,
+        "onsd_tau": inp.onsd_tau,
+        "requested_exam": None,
     }
     if not would_alert:
         return GateVerdict(gate=3, outcome="PASS", reason="no rate alarm to hold",
@@ -209,6 +217,12 @@ def gate3_uncertainty(inp: GateInput, cal: Calibration, would_alert: bool) -> Ga
     # A non-rate finding is never held for a manual check (S3).
     if inp.non_rate_flags:
         return GateVerdict(gate=3, outcome="PASS", reason="non-rate finding is not held",
+                           evidence=evidence)
+    if (inp.co2_mmhg is not None and inp.co2_mmhg >= CO2_EYE_HOLD_MMHG
+            and inp.onsd_tau is not None and inp.onsd_tau < STALE_TAU_HOLD):
+        evidence["requested_exam"] = "ultrasound"
+        return GateVerdict(gate=3, outcome="HOLD",
+                           reason="cabin CO2 elevated and eye scan stale; request guided ONSD ultrasound",
                            evidence=evidence)
     if inp.stale_manual and inp.min_tau is not None and inp.min_tau < STALE_TAU_HOLD:
         return GateVerdict(gate=3, outcome="HOLD",
@@ -219,7 +233,7 @@ def gate3_uncertainty(inp: GateInput, cal: Calibration, would_alert: bool) -> Ga
 
 
 def personal_residual(hr_bpm: float | None, activity_norm: float | None,
-                      cal: Calibration) -> float | None:
+                      cal: Calibration, co2_mmhg: float | None = None) -> float | None:
     """Expected-rate removal using this person's own resting scale.
 
     A transparent saturating context model:
@@ -233,13 +247,13 @@ def personal_residual(hr_bpm: float | None, activity_norm: float | None,
     if cal.rest_hr_median is None or cal.rest_hr_scale is None or cal.rest_hr_scale <= 0:
         return None
     drive = 1.0 - math.exp(-max(0.0, activity_norm) / ACTIVITY_SATURATION_SCALE)
-    expected = cal.rest_hr_median + HR_RESERVE_BPM * drive
+    expected = cal.rest_hr_median + HR_RESERVE_BPM * drive + co2_hr_drive(co2_mmhg)
     return hr_bpm - expected
 
 
 def evaluate(inp: GateInput, cal: Calibration, hold: HoldClock) -> Frame:
     """Run all three gates and map to a workflow state. Pure except for the hold clock."""
-    residual = personal_residual(inp.hr_bpm, inp.activity_norm, cal)
+    residual = personal_residual(inp.hr_bpm, inp.activity_norm, cal, inp.co2_mmhg)
 
     # Measure how long suppression has already run, decide, then commit the decision.
     hold_s = hold.peek(inp.t_s)

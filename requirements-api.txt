@@ -7,3 +7,6 @@ fastapi==0.163.1
 uvicorn==0.54.0
 pydantic==2.14.3
 httpx==0.28.1          # used by fastapi.testclient in tests_api/
+pytest==9.2.0
+numpy>=1.26,<3         # optional DSP / core tests; API state still degrades honestly without it
+scipy>=1.11,<2

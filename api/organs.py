@@ -66,7 +66,12 @@ def _value_of(check: ManualCheck) -> float | None:
     return check.value
 
 
-def organ_readings(checks: list[ManualCheck], now: datetime | None = None) -> list[OrganReading]:
+def organ_readings(checks: list[ManualCheck], now: datetime | None = None,
+                   context: dict | None = None) -> list[OrganReading]:
+    """Demo rule table. ``context`` adds the workstation's labelled SIMULATED reference
+    channels (CO2, proton dose, water, ARED) and the current gate-compensated HR. Without
+    context the original single-indicator behaviour is preserved for the existing tests.
+    """
     latest = latest_by_kind(checks)
     readings: list[OrganReading] = []
     for system, label, hazard, kind, unit, threshold_text, limit, op in SYSTEMS:
@@ -102,7 +107,11 @@ def organ_readings(checks: list[ManualCheck], now: datetime | None = None) -> li
             ))
             continue
         breached = (value >= limit) if op == "ge" else (value > limit if op == "gt" else value < limit)
-        near = (value >= 0.9 * limit) if op in {"ge", "gt"} else (value <= 1.1 * limit)
+        if kind == "temperature":
+            # A normal 36.8 degC core temperature is not "near" a 38 degC demo fever rule.
+            near = 37.5 <= value < limit
+        else:
+            near = (value >= 0.9 * limit) if op in {"ge", "gt"} else (value <= 1.1 * limit)
         status = "ALERT" if breached else ("WATCH" if near else "NOMINAL")
         action = (CONTACT_FLIGHT_SURGEON if breached
                   else REST_AND_RECHECK if near else REPEAT_MEASUREMENT)
@@ -114,6 +123,96 @@ def organ_readings(checks: list[ManualCheck], now: datetime | None = None) -> li
             evidence=(f"Crew-entered {kind}, {age:.1f} h old, tau={t:.2f}. "
                       "Compared with a DEMO threshold, not a validated limit."),
         ))
+    if context:
+        readings = _apply_workstation_context(readings, latest, context, now)
+    return readings
+
+
+def _apply_workstation_context(readings: list[OrganReading], latest: dict[str, ManualCheck],
+                               context: dict, now: datetime | None) -> list[OrganReading]:
+    """Multi-signal demo rules from the cockpit directive. Every added channel is labelled.
+    Never turns UNKNOWN/NOT_AVAILABLE green; a simulated reference channel can raise WATCH/
+    ALERT but is explicitly marked SIMULATED in the evidence."""
+    by_system = {r.system: r for r in readings}
+
+    def bump(system: str, status: str, indicator: str, evidence: str,
+             threshold: str, value: float | None = None, unit: str = "") -> None:
+        r = by_system[system]
+        rank = {"NOMINAL": 0, "WATCH": 1, "ALERT": 2, "UNKNOWN": 1, "NOT_AVAILABLE": 0}
+        # UNKNOWN/NOT_AVAILABLE must not be silently upgraded to NOMINAL by a sim channel.
+        if r.status in {"UNKNOWN", "NOT_AVAILABLE"} and status == "NOMINAL":
+            return
+        if rank.get(status, 0) >= rank.get(r.status, 0):
+            r.status = status  # type: ignore[assignment]
+            r.indicator = indicator
+            r.evidence = evidence
+            r.demo_threshold = threshold
+            if value is not None:
+                r.value = value
+                r.unit = unit
+            r.action = allowed(CONTACT_FLIGHT_SURGEON if status == "ALERT"
+                               else REST_AND_RECHECK if status == "WATCH" else REPEAT_MEASUREMENT)
+
+    co2 = context.get("co2_mmhg")
+    if co2 is not None and co2 >= 4.0:
+        bump("head-eyes", "ALERT", f"Cabin CO2 = {co2:g} mmHg (SIMULATED)",
+             "SIMULATED cabin CO2 reference channel crossed the demo eye/CO2 rule. "
+             "Not a measured cabin sensor.", "ONSD >= 5.8 mm OR CO2 >= 4.0 mmHg (deck claim)",
+             float(co2), "mmHg")
+    proton = context.get("proton_mgy_day")
+    if proton is not None and proton > 2.0:
+        bump("chest-immune", "ALERT", f"Proton dose = {proton:g} mGy/day (SIMULATED)",
+             "SIMULATED radiation reference channel crossed the demo chest/immune rule. "
+             "GOES flux is not converted to dose here.", "Temp >= 38 degC OR proton > 2 mGy/day (deck claim)",
+             float(proton), "mGy/day")
+    hr = context.get("hr_bpm")
+    if hr is not None and hr > 115:
+        compensated = bool(context.get("hr_suppressed"))
+        status = "WATCH" if compensated else "ALERT"
+        bump("heart", status, f"HR = {hr:g} bpm" + (" (exercise-compensated)" if compensated else ""),
+             "Gate 2 explained this rate by activity; shown as WATCH, not a false alarm."
+             if compensated else "Raw HR crossed the demo heart rule and was not exercise-compensated.",
+             "BP >= 140/90 mmHg OR HR > 115 bpm (deck claim)", float(hr), "bpm")
+    bp = latest.get("bp")
+    if bp is not None and bp.diastolic is not None and bp.diastolic >= 90:
+        age = age_hours(bp, now)
+        if age is not None and age <= VALIDITY_HOURS["bp"]:
+            bump("heart", "ALERT", f"BP = {bp.systolic:g}/{bp.diastolic:g} mmHg",
+                 "Crew-entered diastolic pressure crossed the demo BP rule.",
+                 "BP >= 140/90 mmHg OR HR > 115 bpm (deck claim)", bp.systolic, "mmHg")
+    glucose = latest.get("glucose")
+    if glucose is not None and glucose.value is not None:
+        age = age_hours(glucose, now)
+        if age is not None and age <= VALIDITY_HOURS["glucose"] and 100 <= glucose.value < 126:
+            bump("metabolic", "WATCH", f"Glucose = {glucose.value:g} mg/dL",
+                 "Crew-entered glucose is in the demo impaired-fasting band (100–125 mg/dL).",
+                 "Glucose 100–125 WATCH / >=126 ALERT (deck claim)", glucose.value, "mg/dL")
+    water = context.get("water_ml")
+    ared = context.get("ared_min")
+    if water is not None or ared is not None:
+        # In the unified cockpit, Bones & Muscles is driven by the countermeasure log,
+        # not by the sleep proxy. Sleep belongs to Brain & Sleep.
+        r = by_system["bones"]
+        low = (water is not None and water < 1400) or (ared is not None and ared < 20)
+        r.status = "WATCH" if low else "NOMINAL"  # type: ignore[assignment]
+        parts = []
+        if water is not None:
+            parts.append(f"water {water:g} mL")
+        if ared is not None:
+            parts.append(f"ARED {ared:g} min")
+        r.indicator = " / ".join(parts) + " (crew log)"
+        r.value = float(water if water is not None else ared)
+        r.unit = "mL" if water is not None else "min"
+        r.demo_threshold = "ARED < 20 min OR water < 1400 mL (deck claim)"
+        r.evidence = "Crew-entered countermeasure log compared with DEMO references; not treatment advice."
+        r.action = allowed(REST_AND_RECHECK if low else REPEAT_MEASUREMENT)
+    sleep = latest.get("sleep")
+    if sleep is not None and sleep.value is not None:
+        age = age_hours(sleep, now)
+        if age is not None and age <= VALIDITY_HOURS["sleep"] and sleep.value < 4.5:
+            bump("brain", "ALERT", f"Sleep = {sleep.value:g} h",
+                 "Crew-entered sleep is below the demo brain/circadian rule.",
+                 "Sleep < 4.5 h OR PVT > 350 ms (deck claim)", sleep.value, "h")
     return readings
 
 

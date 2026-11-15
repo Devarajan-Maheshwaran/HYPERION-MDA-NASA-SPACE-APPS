@@ -5,7 +5,11 @@
 > workstation from the concept deck: live streaming vitals, the deterministic three-stage
 > trust gate, a six-system body map, crew checks with a live reaction test, a surgeon alert
 > queue and a tamper-evident audit chain.
-> **Run it:** [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
+> **Run it (one command):** `bash run_workstation.sh` → http://localhost:8000 ·
+> [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
+> **Live workstation:** dual-mode data engine, five labelled scenarios, 3-column avionics
+> layout, PVT / ultrasound caliper / vitals exams, ML benchmark honesty panel and local
+> SHA-256 audit chain (`HealthAudit.sol` reference only, not deployed).
 > **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md) ·
 > **Frontend design system:** [docs/FRONTEND-DESIGN.md](docs/FRONTEND-DESIGN.md).
 > **Safety deviations from the deck:** [docs/SAFETY_ISSUES.md](docs/SAFETY_ISSUES.md) — read this

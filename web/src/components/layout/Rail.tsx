@@ -20,6 +20,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  { to: '/workstation', label: 'Live workstation', icon: Gauge, shortcut: 'G W', roles: ['crew', 'flight-surgeon', 'ops', 'researcher'] },
   { to: '/overview', label: 'Overview', icon: LayoutGrid, shortcut: 'G D', roles: ['crew', 'flight-surgeon', 'ops', 'researcher'] },
   { to: '/crew', label: 'Crew console', icon: Activity, shortcut: 'G C', roles: ['crew', 'flight-surgeon', 'ops'] },
   { to: '/crew/checks', label: 'Crew checks', icon: Stethoscope, shortcut: 'G H', roles: ['crew', 'flight-surgeon'] },

@@ -152,6 +152,57 @@ def main() -> int:
     else:
         check("SSE stream delivers a frame", got_frame)
 
+    # Unified live workstation: dual-mode state, five scenarios, three exams.
+    status, state = call(base, "/api/state")
+    check("GET /api/state responds 200", status == 200)
+    check("state carries provenance banner", bool(state.get("provenance_banner")))
+    check("state has six organs", len(state.get("organs", [])) == 6)
+    check("state labels ML gaps honestly", bool(state.get("ml_benchmark", {}).get("not_implemented")))
+
+    status, nominal = call(base, "/api/scenario", role="crew", method="POST",
+                           payload={"scenario_id": "nominal-orbital"})
+    check("nominal scenario accepted", status == 200 and nominal["data_source_mode"] == "SIMULATED_FALLBACK")
+    check("nominal gates pass", all(g["outcome"] == "PASS" for g in nominal["gates"]))
+
+    status, exercise = call(base, "/api/scenario", role="crew", method="POST",
+                            payload={"scenario_id": "eva-ared-exercise"})
+    g2 = next(g for g in exercise["gates"] if g["gate"] == 2)
+    check("exercise scenario blocks false alarm", status == 200 and g2["outcome"] == "BLOCK")
+
+    status, sans = call(base, "/api/scenario", role="crew", method="POST",
+                        payload={"scenario_id": "sans-stale-eye"})
+    g3 = next(g for g in sans["gates"] if g["gate"] == 3)
+    check("SANS scenario holds for eye ultrasound", status == 200 and g3["outcome"] == "HOLD"
+          and g3["evidence"].get("requested_exam") == "ultrasound")
+
+    status, spe = call(base, "/api/scenario", role="crew", method="POST",
+                       payload={"scenario_id": "spe-radiation"})
+    check("SPE scenario escalates", status == 200 and spe["triage"]["tier"] == "SURGEON")
+    check("cosine-median catches simulated silo-2 bit-flip",
+          spe["ml_benchmark"]["cosine_median_demo"]["caught"])
+
+    status, drift = call(base, "/api/scenario", role="crew", method="POST",
+                         payload={"scenario_id": "glycemic-circadian"})
+    statuses = {o["system"]: o["status"] for o in drift["organs"]}
+    check("glycemic/sleep drift raises metabolic + brain", status == 200
+          and statuses["metabolic"] == "WATCH" and statuses["brain"] == "ALERT")
+
+    status, pvt = call(base, "/api/exams/pvt", role="crew", method="POST",
+                       payload={"reaction_ms": [288, 305, 340, 310, 295]})
+    check("POST /api/exams/pvt responds 200", status == 200)
+    status, us = call(base, "/api/exams/ultrasound", role="crew", method="POST",
+                      payload={"sample": "sans"})
+    check("POST /api/exams/ultrasound responds 200", status == 200 and abs(us["caliper"]["onsd_mm"] - 6.1) < 1e-6)
+    status, vitals = call(base, "/api/exams/vitals", role="crew", method="POST",
+                          payload={"bp_sys": 122, "bp_dia": 78, "glucose_mgdl": 92, "temp_c": 36.8,
+                                   "sleep_hrs": 7.2, "water_ml": 1800, "ared_min": 30, "mood_score": 7})
+    check("POST /api/exams/vitals responds 200", status == 200)
+    check("exam audit has no raw PII payload", all("value" not in e.get("detail", {}) for e in vitals["audit"]["entries"]))
+
+    status, real = call(base, "/api/scenario", method="POST", payload={"mode": "REAL_EMPIRICAL"})
+    check("real mode does not invent telemetry", status == 200 and real["frame"] is None
+          and real["telemetry_mode"] in {"NOT_AVAILABLE", "REAL_EMPIRICAL"})
+
     # SPA is served.
     try:
         with urllib.request.urlopen(base + "/", timeout=10) as response:

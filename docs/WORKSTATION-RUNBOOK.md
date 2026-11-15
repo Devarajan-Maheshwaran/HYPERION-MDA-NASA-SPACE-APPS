@@ -30,14 +30,29 @@ npm ci          # reproducible install from package-lock.json
 
 ## 2. Run
 
-**Two terminals.** The API serves the built SPA too, so production needs only one process.
+**One command (bootstrap + build + launch):**
 
-Development (hot reload):
+```bash
+bash run_workstation.sh
+# open http://localhost:8000
+```
+
+`backend_api.py` is the single-process entrypoint. It serves the built React SPA and the
+unified `/api/state`, `/api/scenario`, `/api/exams/*` endpoints on the same origin — no CORS,
+no separate frontend server. If `web/dist` is missing it runs `npm ci` / `npm run build` first.
+
+Already installed? Launch directly:
+
+```bash
+.venv-api/bin/python backend_api.py
+# open http://localhost:8000
+```
+
+Development (hot reload, two terminals):
 
 ```bash
 # terminal 1
 .venv-api/bin/python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
-
 # terminal 2
 cd web && npm run dev          # http://localhost:5173
 ```
@@ -45,26 +60,27 @@ cd web && npm run dev          # http://localhost:5173
 The browser only ever requests relative `/api/...`; Vite proxies those to port 8000. No
 browser-facing code addresses `localhost`.
 
-Single process (built frontend served by the API):
-
-```bash
-cd web && npm run build && cd ..
-.venv-api/bin/python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
-# open http://localhost:8000
-```
-
 Optional audit persistence (otherwise the chain is in-memory and clears on restart):
 
 ```bash
-HYPERION_AUDIT_LOG=/tmp/hyperion-audit.jsonl .venv-api/bin/python -m uvicorn api.main:app --port 8000
+HYPERION_AUDIT_LOG=/tmp/hyperion-audit.jsonl .venv-api/bin/python backend_api.py
+```
+
+Optional real-data cache:
+
+```bash
+HYPERION_MDA_DATA_DIR=/path/to/cache .venv-api/bin/python backend_api.py
 ```
 
 ## 3. Navigation
 
+- The app lands on **Live workstation** (`/workstation`): the 3-column avionics layout from
+  the directive — body twin + inspector, gate pipeline + charts + triage, diagnostics tabs +
+  readiness shield, ML benchmark and audit panels.
 - **⌘K / Ctrl-K** opens the command palette: navigate, run/stop scenarios, switch subject,
   switch demo role, refresh session.
-- **G then D / C / H / A / O / R** jumps to Overview, Crew console, Crew checks, Alert
-  queue, Operations, Research. The rail shows the chord indicators.
+- **G then W / D / C / H / A / O / R** jumps to Live workstation, Overview, Crew console,
+  Crew checks, Alert queue, Operations, Research. The rail shows the chord indicators.
 - The rail collapses to 64px; the state persists. Below `md` a compact mobile nav replaces it.
 - The topbar date-range control (`30s / 2m / 5m / All`) filters the telemetry canvas and
   gate-verdict log. On mobile the same control appears in the chart header.
@@ -72,16 +88,18 @@ HYPERION_AUDIT_LOG=/tmp/hyperion-audit.jsonl .venv-api/bin/python -m uvicorn api
 
 ## 4. First run — the honest path
 
-1. Open the app. It lands on **Overview**. The provenance strip shows lane **NONE** and
-   **No data loaded**. Every organ is **NOT AVAILABLE**. This is correct: nothing is
-   invented to fill the screen.
+1. Open the app. It lands on **Live workstation**. Until a scenario is selected the banner
+   reads **SIMULATED MISSION TELEMETRY FALLBACK … Explicitly Labeled Non-Flight Simulation**
+   and there is no telemetry; every organ is **NOT_AVAILABLE**. Nothing is invented to fill
+   the screen. Use the five scenario buttons for labelled demo states, or switch to REAL mode
+   to see verified lab/GOES availability (`telemetry_mode=NOT_AVAILABLE` without a live wearable).
 2. Switch the role selector to **Ops**.
 3. Go to **Operations** (`G O`). In **Per-person calibration**, press **Calibrate** for
    `demo-crew-1`. The note says this is a DEMO calibration built from a SIMULATED resting window.
 4. In **Scenario runner**, run **Exercise false alarm** (or press ⌘K and search for it).
-5. Return to **Overview** (`G D`). Watch raw HR climb toward ~148 bpm while the residual
-   stays near zero. The gate-verdict log shows Gate 2 **BLOCK**; the **Crew console** shows
-   the banner "Gate 2 blocked an exercise false alarm". State: **CONTEXT COMPENSATED**.
+5. Return to **Live workstation** (`G W`) or **Overview** (`G D`). Watch raw HR climb toward
+   ~148 bpm while the residual stays near zero. Gate 2 shows **BLOCK** and the false-alarm
+   banner appears. State: **CONTEXT COMPENSATED**.
 6. Run **Exercise + irregular rhythm** instead. The same movement is present, but the
    non-rate finding escalates to **SURGEON ALERT**. It is never suppressed.
 7. Switch to **Flight surgeon** and acknowledge the alert with a note.
@@ -118,13 +136,16 @@ PYTHONPATH=src python -m unittest discover -s tests
 PYTHONPATH=src .venv/bin/python -m unittest discover -s experiments/m6/tests
 python experiments/m6/verify_m6.py
 
-# new API suite (57 tests)
-.venv-api/bin/python -m unittest discover -s tests_api
+# API suite (70 tests, pytest)
+.venv-api/bin/python -m pytest tests_api -q
+
+# full Python suite (core + API + M6)
+PYTHONPATH=src .venv-api/bin/python -m pytest tests tests_api experiments/m6/tests -q
 
 # web: strict typecheck, 34 unit/DOM tests, production build
 cd web && npm run typecheck && npm test && npm run build
 
-# end-to-end against a RUNNING server (26 checks)
+# end-to-end against a RUNNING server (42 checks)
 python scripts/smoke_workstation.py --base http://127.0.0.1:8000
 ```
 
@@ -150,6 +171,13 @@ offline results.
   checks and alerts unless `HYPERION_AUDIT_LOG` is set (which persists only the audit chain).
 - The stream advances while a browser tab is driving it (`/api/stream/step` once a second).
   There is no background server-side worker.
-- Not implemented from the deck: neural risk heads, MC-dropout, conformal guarantees, Flower
-  FL, Opacus DP-SGD, GOES radiation ingest, WESAD (gate NO-GO), camera ONSD caliper, and the
-  EVM/Solidity ledger. `docs/REQUIREMENTS-TRACEABILITY.md` tracks each one.
+- Implemented in the unified cockpit: dual-mode state engine, five labelled demo scenarios,
+  `/api/state`, `/api/scenario`, `/api/exams/{pvt,ultrasound,vitals}`, GOES cached/live loader
+  (`/api/goes/refresh`), manual ONSD caliper with pixel→mm math, multi-signal demo organ rules,
+  split-conformal demo quantile, cosine-median bit-flip demo, and `contracts/HealthAudit.sol`
+  as a **reference only** contract.
+- Still not implemented / not claimed: neural risk heads, MC-dropout σ_epistemic, conformal
+  coverage guarantees, sklearn LR/RF baselines, PyTorch HyperionCoreNet, real Flower FL,
+  Opacus DP-SGD (ε,δ), WESAD (gate NO-GO), automated ultrasound diagnosis, flux→dose
+  conversion, and a deployed EVM ledger. The ML panel lists these as `NOT_IMPLEMENTED`.
+  `docs/REQUIREMENTS-TRACEABILITY.md` tracks each one.

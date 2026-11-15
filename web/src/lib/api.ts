@@ -143,6 +143,18 @@ export const api = {
         sha256?: string;
       }
     >('/api/lab/osd575'),
+  state: () => request<import('./types').WorkstationState>('/api/state'),
+  scenario: (payload: { scenario_id?: string; habitat?: string; mode?: string }) =>
+    request<import('./types').WorkstationState>('/api/scenario', { method: 'POST', body: JSON.stringify(payload) }),
+  examPvt: (reactionMs: number[], subjectId?: string) =>
+    request<import('./types').WorkstationState>('/api/exams/pvt', {
+      method: 'POST', body: JSON.stringify({ reaction_ms: reactionMs, subject_id: subjectId }),
+    }),
+  examUltrasound: (payload: Record<string, unknown>) =>
+    request<import('./types').WorkstationState>('/api/exams/ultrasound', { method: 'POST', body: JSON.stringify(payload) }),
+  examVitals: (payload: Record<string, unknown>) =>
+    request<import('./types').WorkstationState>('/api/exams/vitals', { method: 'POST', body: JSON.stringify(payload) }),
+  refreshGoes: () => request<Envelope & { goes: Record<string, unknown> }>('/api/goes/refresh', { method: 'POST' }),
 };
 
 /** SSE with automatic reconnect. Returns an unsubscribe function. */

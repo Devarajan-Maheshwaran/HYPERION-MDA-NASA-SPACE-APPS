@@ -8,14 +8,15 @@ import { CrewChecks } from './views/CrewChecks';
 import { SurgeonQueue } from './views/SurgeonQueue';
 import { OpsConsole } from './views/OpsConsole';
 import { ResearchView } from './views/ResearchView';
+import { WorkstationView } from './views/WorkstationView';
 import { EmptyState } from './components/ui';
 import type { Role } from './lib/types';
 
 const HOME: Record<Role, string> = {
-  crew: '/overview',
-  'flight-surgeon': '/overview',
-  ops: '/overview',
-  researcher: '/overview',
+  crew: '/workstation',
+  'flight-surgeon': '/workstation',
+  ops: '/workstation',
+  researcher: '/workstation',
 };
 
 function RoleGate({ allow, children }: { allow: Role[]; children: React.ReactNode }) {
@@ -41,6 +42,7 @@ export function App() {
       <AppShell>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/workstation" element={<WorkstationView />} />
           <Route path="/overview" element={<Overview />} />
           <Route path="/crew" element={<RoleGate allow={['crew', 'flight-surgeon', 'ops']}><CrewConsole /></RoleGate>} />
           <Route path="/crew/checks" element={<RoleGate allow={['crew', 'flight-surgeon']}><CrewChecks /></RoleGate>} />

@@ -32,7 +32,8 @@ would be meaningless, and exercise detection would silently depend on device gai
 **This build:** activity is `(magnitude − rest_median) / rest_scale` for the **same person**, using
 their own resting window: a dimensionless, per-person z-like quantity. The API field is
 `activity_norm` and the unit is `"per-person rest scale (dimensionless)"`. No g-based constant exists
-in the code.
+in the gate code. The cockpit may *display* a labelled SIMULATED ENMO g reference channel, but it never
+feeds the gate.
 
 ## S3 — Exercise suppression can never hide a non-rate alarm
 
@@ -65,7 +66,8 @@ These are **demo limits, not clinical thresholds**, and are labelled as such in 
 **Problem:** These are treatment instructions. This prototype has no clinical validation and must
 not issue them.
 
-**This build:** the action allow-list is exactly four strings:
+**This build:** the action allow-list is exactly four strings (storm-shelter / fluid / ration / light
+therapy prompts from the deck are **not** emitted as actions):
 1. `Repeat measurement`
 2. `Rest and recheck`
 3. `Check sensor`
@@ -84,7 +86,9 @@ against the cited standards. Presenting them as validated compliance would be a 
 
 **This build:** a transparent rule table, each row visibly labelled `DEMO THRESHOLD`, with the
 deck's number shown as *the deck's claim*, not as a validated limit. A stale input yields `UNKNOWN`,
-never `NOMINAL`. No neural risk head exists.
+never `NOMINAL`. No neural risk head exists. The unified cockpit extends the table with the deck's
+multi-signal OR rules (CO₂/proton/water/ARED/HR); every added reference channel is labelled
+SIMULATED or crew-log in the evidence string.
 
 ## S7 — Staleness never turns a signal green
 
@@ -93,16 +97,19 @@ never `NOMINAL`. No neural risk head exists.
 **This build:** τ is computed and displayed. A check older than its declared validity window is
 `STALE` and its organ status becomes `UNKNOWN`. Missing data is `NOT_AVAILABLE`. A failed read is
 `FAILED`. None of these render green. Gate 3 may `HOLD` a ground alarm and request the fastest crew
-check, which is the deck's intended active-sensing behaviour, minus any risk model.
+check, which is the deck's intended active-sensing behaviour, minus any risk model. In the unified
+cockpit, elevated SIMULATED cabin CO₂ plus a stale ONSD τ specifically requests guided eye ultrasound.
 
 ## S8 — No neural network or LLM in the decision path
 
 **Deck:** PyTorch `HyperionCoreNet`, MC-dropout, conformal bands from a neural predictor.
 
-**This build:** no neural model is trained or loaded. The "conformal band" shown on the chart is an
-**empirical quantile of the calibrated resting residual** — a descriptive, non-parametric interval,
-labelled `demo band (empirical residual quantile)`. It is not a conformal guarantee and carries no
-coverage claim. The M6 ridge/logistic results are shown read-only as measured offline evidence.
+**This build:** no neural model is trained or loaded in the decision path. The unified workstation
+adds `api/conformal.py`, a finite-sample split-conformal quantile on **SIMULATED** resting residuals,
+labelled `demo split-conformal quantile … no coverage guarantee`. `sigma_epistemic` is `null` because
+MC-dropout / HyperionCoreNet do not exist. The M6 ridge/logistic results are shown read-only as
+measured offline evidence. The ML panel lists requested sklearn/PyTorch/Flower/Opacus benchmarks as
+`NOT_IMPLEMENTED` rather than inventing metrics; the FL panel is the existing toy FedAvg simulation.
 
 ## S9 — Audit is a hash chain, not a blockchain
 
@@ -111,7 +118,9 @@ coverage claim. The M6 ridge/logistic results are shown read-only as measured of
 **This build:** an append-only local JSONL log where each entry includes the previous entry's
 SHA-256. `GET /api/audit/verify` recomputes the chain and reports the first broken link. This gives
 tamper-*evidence*, not tamper-*proofing*, and is described that way in the UI. No raw measurement is
-written to the audit log — only event type, subject, role, verdict and digest.
+written to the audit log — only event type, subject, role, verdict and digest. Acknowledgement notes
+are hashed (`note_sha256`) before anchoring; PVT/calibration audit entries store counts, not values.
+`contracts/HealthAudit.sol` is a reference contract only and is **not deployed**.
 
 ## S10 — Demo-grade authentication
 
@@ -123,3 +132,29 @@ banner and in `README-API.md`. It must not be deployed as an access-control boun
 The NASA lab lane, the SIMULATED/INJECTED scenario lane and the RECORDED non-astronaut lane are
 separate. Every frame, alert and chart carries its lane badge. Scenario data can never be written
 into the NASA lane, and the existing lane-separation tests still pass unchanged.
+
+## S12 — Saturating demo context model, not fitted physiology
+
+**Deck:** `r_HR = HR − f(ENMO, CO₂)` with an implied linear personal response.
+
+**Problem:** an unbounded linear context model can "explain away" arbitrarily high heart rates, and
+fitting it to the demo scenarios would tune the gate to pass.
+
+**This build:** `api/gates.py` uses declared demo constants:
+`expected = rest_median + 80·(1 − e^(−activity_norm/6)) + co2_hr_drive`, where the CO₂ term is a
+labelled scenario-engine constant (`api/context.py`), not a measured physiological coefficient.
+Residuals are one-sided; suppression still obeys the hard ceiling, hold timeout and non-rate bypass.
+Gate constants are never changed to make a scenario pass.
+
+## S13 — Dual-mode engine never silently substitutes real data
+
+**Deck:** a single "REAL_EMPIRICAL_DATA" stream mixing OSD-575, GOES and WESAD/PhysioNet.
+
+**Problem:** those sources have different populations, units and availability. GOES integral proton
+flux is pfu, not mGy/day; WESAD is gate NO-GO; PhysioNet is non-astronaut and uncached here.
+
+**This build:** `GET /api/state` reports each source independently (`sources.lab`, `sources.goes`,
+`sources.wearable`). `REAL_EMPIRICAL` mode shows verified lab/GOES data when present and
+`telemetry_mode=NOT_AVAILABLE` when no live wearable exists — it does **not** display simulated frames.
+Selecting a scenario switches to `SIMULATED_FALLBACK` with the explicit non-flight banner. No
+flux→dose conversion is performed.

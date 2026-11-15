@@ -42,9 +42,19 @@ def registry_summary() -> dict[str, Any]:
             "source": "signal_registry.CHANNELS (value-free registry)"}
 
 
+def _osdr_folder() -> Path | None:
+    base = cache_dir()
+    return base / "osdr" / "OSD-575" if base is not None else None
+
+
+def _physionet_folder() -> Path | None:
+    base = cache_dir()
+    return base / "physionet" / "wrist-1.0.0" if base is not None else None
+
+
 def lab_lane() -> LaneInfo:
     try:
-        verified = verified_cmp_file(cache_dir())
+        verified = verified_cmp_file(_osdr_folder())
     except OsdrSourceError as exc:
         return LaneInfo(lane="LAB DATA", available=False, detail=str(exc),
                         provenance="NASA OSDR OSD-575 (not cached)")
@@ -61,7 +71,7 @@ def lab_rows() -> dict[str, Any]:
     from hyperion_mda.osdr_cmp import load_osd575_cmp
 
     try:
-        verified = verified_cmp_file(cache_dir())
+        verified = verified_cmp_file(_osdr_folder())
         records, report = load_osd575_cmp(verified)
     except (OsdrSourceError, OSError) as exc:
         return {"available": False, "detail": str(exc), "rows": [], "lane": "LAB DATA",
@@ -97,7 +107,7 @@ def recorded_lane() -> LaneInfo:
         if first is None:
             raise PhysioNetSourceError("no record names in the manifest")
         from hyperion_mda.physionet_source import verified_record
-        verified_record(first, cache_dir())
+        verified_record(first, _physionet_folder())
     except Exception as exc:  # missing cache, checksum, or format — all reported honestly
         return LaneInfo(lane="RECORDED-NON-ASTRONAUT", available=False, detail=str(exc),
                         provenance="PhysioNet Wrist PPG During Exercise v1.0.0 (not cached)")
