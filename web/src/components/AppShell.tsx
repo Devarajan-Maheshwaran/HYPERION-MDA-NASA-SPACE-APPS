@@ -1,132 +1,138 @@
 import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { Menu } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
-import { Badge, Select } from './ui';
+import { DISCLAIMER } from '../lib/types';
+import { laneExplanation } from '../lib/status';
 import { cn } from '../lib/utils';
-import { DISCLAIMER, type Habitat, type Role } from '../lib/types';
-import { laneExplanation, laneTone, stateLabel, stateTone } from '../lib/status';
+import { Rail, NAV_ITEMS } from './layout/Rail';
+import { Topbar, type Timeframe } from './layout/Topbar';
+import { CommandPalette } from './layout/CommandPalette';
 
-const ROLE_LABEL: Record<Role, string> = {
-  crew: 'Crew',
-  'flight-surgeon': 'Flight surgeon',
-  ops: 'Ops / engineering',
-  researcher: 'Researcher',
-};
+export { LaneBadge } from './layout/Topbar';
 
-const NAV: Array<{ to: string; label: string; roles: Role[] }> = [
-  { to: '/crew', label: 'Crew console', roles: ['crew', 'flight-surgeon', 'ops'] },
-  { to: '/crew/checks', label: 'Crew checks', roles: ['crew', 'flight-surgeon'] },
-  { to: '/surgeon', label: 'Surgeon queue', roles: ['flight-surgeon', 'ops'] },
-  { to: '/ops', label: 'Ops console', roles: ['ops', 'flight-surgeon'] },
-  { to: '/research', label: 'Research', roles: ['researcher', 'flight-surgeon', 'ops'] },
-];
-
-export function LaneBadge({ className }: { className?: string }) {
-  const { frame } = useSession();
-  const lane = frame?.lane ?? 'NONE';
-  return (
-    <span
-      title={laneExplanation(lane)}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest',
-        laneTone(lane),
-        className,
-      )}
-    >
-      <span aria-hidden className="text-[8px]">●</span>
-      {lane}
-    </span>
-  );
+interface ShellContextValue {
+  timeframe: Timeframe;
+  setTimeframe: (value: Timeframe) => void;
+  openPalette: () => void;
 }
 
+const ShellContext = React.createContext<ShellContextValue>({
+  timeframe: '2m',
+  setTimeframe: () => undefined,
+  openPalette: () => undefined,
+});
+
+export function useShell(): ShellContextValue {
+  return React.useContext(ShellContext);
+}
+
+const COLLAPSE_KEY = 'hyperion.rail.collapsed';
+
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, changeRole, subjectId, changeSubject, subjects, habitat, changeHabitat,
-    session, frame, connected, running, error } = useSession();
+  const { frame, error, role, startScenario, running } = useSession();
+  const [collapsed, setCollapsed] = React.useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+  });
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [mobileNav, setMobileNav] = React.useState(false);
+  const [timeframe, setTimeframe] = React.useState<Timeframe>('2m');
   const location = useLocation();
-  const visibleNav = NAV.filter((item) => item.roles.includes(role));
+
+  React.useEffect(() => { setMobileNav(false); }, [location.pathname]);
+  React.useEffect(() => {
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch { /* private mode */ }
+  }, [collapsed]);
+
+  // ⌘K / Ctrl-K opens the palette from anywhere.
+  React.useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((value) => !value);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const primary = React.useCallback(() => {
+    if (role === 'researcher') return;
+    void startScenario(frame?.scenario_id ?? 'exercise-false-alarm');
+  }, [frame?.scenario_id, role, startScenario]);
+
+  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const shellValue = React.useMemo(() => ({ timeframe, setTimeframe, openPalette: () => setPaletteOpen(true) }), [timeframe]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink-900 text-slate-200">
-      <header className="sticky top-0 z-30 border-b border-ink-600 bg-ink-800/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 font-bold text-white">H</div>
-            <div>
-              <div className="text-sm font-bold tracking-wide text-slate-100">HYPERION-MDA</div>
-              <div className="text-[10px] uppercase tracking-widest text-slate-500">Crew health workstation</div>
+    <ShellContext.Provider value={shellValue}>
+      <div className="flex h-screen overflow-hidden bg-base">
+        <Rail collapsed={collapsed} onToggle={() => setCollapsed((value) => !value)} />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar
+            timeframe={timeframe}
+            onTimeframe={setTimeframe}
+            onOpenPalette={() => setPaletteOpen(true)}
+            onPrimary={primary}
+          />
+
+          {/* mobile nav */}
+          <div className="flex items-center gap-2 border-b border-hairline bg-surface px-3 py-1.5 md:hidden">
+            <button type="button" onClick={() => setMobileNav((v) => !v)} aria-label="Toggle navigation"
+              aria-expanded={mobileNav} className="text-ink-muted">
+              <Menu size={15} strokeWidth={1.75} />
+            </button>
+            <span className="text-xs text-ink-muted">{items.length} views</span>
+            <button type="button" onClick={() => setPaletteOpen(true)}
+              className="ml-auto text-xs text-ink-faint hover:text-ink-secondary">⌘K</button>
+          </div>
+          {mobileNav ? (
+            <div className="grid grid-cols-2 gap-1 border-b border-hairline bg-surface p-2 md:hidden">
+              {items.map((item) => (
+                <NavLink key={item.to} to={item.to}
+                  className={({ isActive }) => cn('rounded-md px-2 py-1.5 text-xs',
+                    isActive ? 'bg-white/[0.06] text-ink' : 'text-ink-secondary')}>
+                  {item.label}
+                </NavLink>
+              ))}
             </div>
+          ) : null}
+
+          {/* honesty strip: lane provenance is always stated, never buried */}
+          <div className="flex shrink-0 items-center gap-2 border-b border-hairline bg-surface-2/60 px-3 py-1">
+            <span className="microlabel shrink-0">Provenance</span>
+            <span className="truncate text-[11px] text-ink-muted">{laneExplanation(frame?.lane ?? 'NONE')}</span>
+            {running ? <span className="tnum ml-auto shrink-0 text-[10px] text-accent">STREAMING</span> : null}
           </div>
 
-          <LaneBadge />
+          {error ? (
+            <div role="alert" className="shrink-0 border-b border-state-alert/30 bg-state-alert/10 px-3 py-1.5 text-xs text-state-alert">
+              API error: {error} — displayed values are not refreshed and must be treated as UNKNOWN.
+            </div>
+          ) : null}
 
-          {frame ? (
-            <Badge tone={stateTone(frame.state)}>{stateLabel(frame.state)}</Badge>
-          ) : (
-            <Badge tone="unknown">No data loaded</Badge>
-          )}
+          <motion.main
+            key={location.pathname}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}
+            className="min-h-0 flex-1 overflow-y-auto"
+          >
+            <div className="p-3 lg:p-4">{children}</div>
+          </motion.main>
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <span className={cn('flex items-center gap-1 text-[10px] uppercase tracking-wider',
-              connected ? 'text-nominal' : 'text-slate-500')}>
-              <span aria-hidden>●</span>{connected ? 'SSE live' : 'SSE offline'}
-            </span>
-            {running ? <Badge tone="info">Streaming</Badge> : null}
-            <Select aria-label="Habitat" value={habitat}
-              onChange={(event) => void changeHabitat(event.target.value as Habitat)}>
-              {(session?.habitats ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
-            </Select>
-            <Select aria-label="Subject" value={subjectId}
-              onChange={(event) => void changeSubject(event.target.value)}>
-              {subjects.map((subject) => (
-                <option key={subject.subject_id} value={subject.subject_id}>
-                  {subject.subject_id}{subject.calibration.calibrated ? '' : ' (uncalibrated)'}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Role" value={role}
-              onChange={(event) => void changeRole(event.target.value as Role)}>
-              {(Object.keys(ROLE_LABEL) as Role[]).map((item) => (
-                <option key={item} value={item}>{ROLE_LABEL[item]}</option>
-              ))}
-            </Select>
-          </div>
+          <footer className="shrink-0 border-t border-hairline bg-surface px-3 py-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <span className="text-[11px] font-medium text-ink-secondary">{DISCLAIMER}</span>
+              <span className="tnum hidden text-[10px] text-ink-faint lg:inline">
+                deterministic gates · no neural model or LLM in the decision path · demo-grade roles · local hash-chain audit
+              </span>
+            </div>
+          </footer>
         </div>
 
-        <nav className="mx-auto flex max-w-[1600px] flex-wrap gap-1 px-4 pb-2">
-          {visibleNav.map((item) => (
-            <NavLink key={item.to} to={item.to}
-              className={({ isActive }) => cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                isActive || location.pathname === item.to
-                  ? 'bg-ink-700 text-slate-100'
-                  : 'text-slate-400 hover:bg-ink-700/60 hover:text-slate-200',
-              )}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-
-      <div className="border-b border-ink-700 bg-watch/10 px-4 py-1.5 text-center text-[11px] text-watch">
-        Research prototype · demo-grade role switcher, not authentication · {laneExplanation(frame?.lane ?? 'NONE')}
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </div>
-
-      {error ? (
-        <div className="border-b border-alert/40 bg-alert/10 px-4 py-2 text-center text-xs text-alert">
-          API error: {error} — values below are not refreshed and must be treated as UNKNOWN.
-        </div>
-      ) : null}
-
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-4">{children}</main>
-
-      <footer className="sticky bottom-0 z-20 border-t border-ink-600 bg-ink-800/95 px-4 py-2 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2 text-[11px]">
-          <span className="font-semibold text-slate-300">{DISCLAIMER}</span>
-          <span className="text-slate-500">
-            No neural model or LLM in the decision path · gates are deterministic · audit is a local hash chain, not a blockchain
-          </span>
-        </div>
-      </footer>
-    </div>
+    </ShellContext.Provider>
   );
 }

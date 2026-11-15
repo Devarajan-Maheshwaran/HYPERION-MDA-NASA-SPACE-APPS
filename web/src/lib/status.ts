@@ -5,11 +5,12 @@ import type { Lane, OrganStatus, Outcome, Status, WorkflowState } from './types'
 export type Tone = 'nominal' | 'watch' | 'alert' | 'unknown' | 'info';
 
 const TONE_CLASS: Record<Tone, string> = {
-  nominal: 'bg-nominal/15 text-nominal border-nominal/40',
-  watch: 'bg-watch/15 text-watch border-watch/40',
-  alert: 'bg-alert/15 text-alert border-alert/40',
-  unknown: 'bg-slate-500/15 text-slate-400 border-slate-500/40',
-  info: 'bg-sky-500/15 text-sky-300 border-sky-500/40',
+  nominal: 'border-state-ok/25 bg-state-ok/10 text-state-ok',
+  watch: 'border-state-watch/25 bg-state-watch/10 text-state-watch',
+  alert: 'border-state-alert/25 bg-state-alert/10 text-state-alert',
+  // Neutral by construction: no green token can reach an unknown reading.
+  unknown: 'border-hairline bg-white/[0.03] text-ink-muted',
+  info: 'border-state-info/25 bg-state-info/10 text-state-info',
 };
 
 export function toneClass(tone: Tone): string {
@@ -67,15 +68,15 @@ export function measurementTone(status: Status): Tone {
 export function laneTone(lane: Lane): string {
   switch (lane) {
     case 'LAB DATA':
-      return 'bg-lab/15 text-lab border-lab/40';
+      return 'border-state-info/30 bg-state-info/10 text-state-info';
     case 'SIMULATED':
-      return 'bg-simulated/15 text-simulated border-simulated/40';
+      return 'border-hairline bg-white/[0.03] text-ink-secondary';
     case 'INJECTED':
-      return 'bg-injected/15 text-injected border-injected/40';
+      return 'border-state-watch/30 bg-state-watch/10 text-state-watch';
     case 'RECORDED-NON-ASTRONAUT':
-      return 'bg-recorded/15 text-recorded border-recorded/40';
+      return 'border-state-ok/30 bg-state-ok/10 text-state-ok';
     case 'NONE':
-      return 'bg-slate-500/15 text-slate-400 border-slate-500/40';
+      return 'border-hairline bg-white/[0.03] text-ink-muted';
   }
 }
 

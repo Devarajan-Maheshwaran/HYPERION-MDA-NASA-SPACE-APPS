@@ -6,7 +6,8 @@
 > trust gate, a six-system body map, crew checks with a live reaction test, a surgeon alert
 > queue and a tamper-evident audit chain.
 > **Run it:** [docs/WORKSTATION-RUNBOOK.md](docs/WORKSTATION-RUNBOOK.md).
-> **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md).
+> **Design:** [docs/PHASE0-API-UI.md](docs/PHASE0-API-UI.md) ·
+> **Frontend design system:** [docs/FRONTEND-DESIGN.md](docs/FRONTEND-DESIGN.md).
 > **Safety deviations from the deck:** [docs/SAFETY_ISSUES.md](docs/SAFETY_ISSUES.md) — read this
 > before presenting. Gate 1 ships uncalibrated, activity is per-person scale-normalised (not
 > ENMO in g), non-rate findings are never suppressed, and no treatment advice is issued.

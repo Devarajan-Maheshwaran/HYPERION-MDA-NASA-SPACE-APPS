@@ -66,11 +66,12 @@ describe('GateBadges rendering', () => {
       gates: frame.gates.map((g) => ({ ...g, outcome: 'UNKNOWN' as const, reason: 'not calibrated for this person' })),
     };
     const { container } = render(<GateBadges frame={unknown} />);
-    const badges = Array.from(container.querySelectorAll('button'));
+    const badges = Array.from(container.querySelectorAll('button[data-tone]'));
     expect(badges.length).toBe(3);
     for (const badge of badges) {
-      expect(badge.className).toContain('slate');
-      expect(badge.className).not.toContain('nominal');
+      expect(badge.getAttribute('data-tone')).toBe('unknown');
+      expect(badge.className).toContain('text-ink-muted');
+      expect(badge.className).not.toContain('state-ok');
     }
   });
 });
@@ -82,12 +83,13 @@ describe('BodyMap rendering', () => {
     const { container } = render(<BodyMap organs={organs} selected={null} onSelect={onSelect} />);
     expect(screen.getByText('Heart & Vessels')).toBeTruthy();
     expect(screen.getByText('N/A')).toBeTruthy();
-    const chips = Array.from(container.querySelectorAll('span')).filter((s) =>
+    const chips = Array.from(container.querySelectorAll('span[data-tone]')).filter((s) =>
       ['UNKNOWN', 'N/A'].includes(s.textContent ?? ''));
     expect(chips.length).toBe(2);
     for (const chip of chips) {
-      expect(chip.className).toContain('slate');
-      expect(chip.className).not.toContain('nominal');
+      expect(chip.getAttribute('data-tone')).toBe('unknown');
+      expect(chip.className).toContain('text-ink-muted');
+      expect(chip.className).not.toContain('state-ok');
     }
   });
 

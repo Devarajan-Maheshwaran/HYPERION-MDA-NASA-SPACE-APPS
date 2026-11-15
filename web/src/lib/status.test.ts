@@ -38,11 +38,12 @@ describe('status honesty rules', () => {
     expect(outcomeTone('HOLD')).toBe('watch');
   });
 
-  it('uses a grey class for unknown, with no green in it', () => {
+  it('uses a neutral grey class for unknown, with no green in it', () => {
     const css = toneClass('unknown');
-    expect(css).toContain('slate');
+    expect(css).toContain('text-ink-muted');
+    expect(css).not.toContain('state-ok');
     expect(css).not.toContain('nominal');
-    expect(css).not.toContain('#22c55e');
+    expect(css).not.toContain('#3FB950');
   });
 
   it('renders missing numbers as text, never as zero', () => {

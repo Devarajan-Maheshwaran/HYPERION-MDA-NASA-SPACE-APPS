@@ -1,43 +1,107 @@
+/* Self-hosted, Latin subset only — no CDN, no unused unicode-range payload. */
+@import '@fontsource/plus-jakarta-sans/latin-400.css';
+@import '@fontsource/plus-jakarta-sans/latin-500.css';
+@import '@fontsource/plus-jakarta-sans/latin-600.css';
+@import '@fontsource/plus-jakarta-sans/latin-700.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: dark;
+  --rail-w: 220px;
+  --rail-w-collapsed: 64px;
+  --topbar-h: 52px;
+}
+
+* {
+  border-color: rgba(255, 255, 255, 0.07);
 }
 
 html,
 body,
 #root {
-  min-height: 100%;
+  height: 100%;
 }
 
 body {
   margin: 0;
-  background: #0b1220;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: #0b0c0e;
+  color: #e7e9ec;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Keyboard focus must stay visible on every interactive element. */
+/* Every number, timestamp, badge and table cell is monospace and tabular. */
+@layer base {
+  .tnum {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .hairline {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .surface-panel {
+    background: #13151a;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+  }
+  /* Instrument-style uppercase micro label. */
+  .microlabel {
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    font-weight: 600;
+  }
+}
+
 :focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
+  outline: 1px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.25);
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #111a2b;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #22304d;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Recharts: strip the library's default chrome down to hairlines. */
+.recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.05);
+}
+.recharts-surface {
+  overflow: visible;
+}
+.recharts-tooltip-wrapper {
+  outline: none;
 }
 
 .line-clamp-2 {
@@ -45,4 +109,14 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

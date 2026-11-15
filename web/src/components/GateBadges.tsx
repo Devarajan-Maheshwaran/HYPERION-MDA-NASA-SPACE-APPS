@@ -1,8 +1,10 @@
 import * as React from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { Frame, GateVerdict } from '../lib/types';
 import { outcomeTone, toneClass } from '../lib/status';
 import { cn } from '../lib/utils';
 import { Badge } from './ui';
+import { EASE_CRISP, pressable } from '../lib/motion';
 
 const GATE_TITLE: Record<1 | 2 | 3, string> = {
   1: 'Sensor quality',
@@ -20,7 +22,7 @@ export function GateBadges({ frame }: { frame: Frame | null }) {
   const [open, setOpen] = React.useState<1 | 2 | 3 | null>(null);
   if (!frame) {
     return (
-      <div className="rounded-lg border border-dashed border-ink-600 px-3 py-6 text-center text-xs text-slate-500">
+      <div className="rounded-lg border border-dashed border-hairline px-3 py-6 text-center text-xs text-ink-faint">
         No gate verdicts yet — no data loaded.
       </div>
     );
@@ -30,54 +32,71 @@ export function GateBadges({ frame }: { frame: Frame | null }) {
   return (
     <div className="space-y-2">
       <div className="grid gap-2 sm:grid-cols-3">
-        {frame.gates.map((gate) => (
-          <button key={gate.gate} type="button" onClick={() => setOpen(open === gate.gate ? null : gate.gate)}
-            className={cn('rounded-lg border p-2.5 text-left transition-colors',
-              toneClass(outcomeTone(gate.outcome)),
-              open === gate.gate ? 'ring-1 ring-slate-300' : 'hover:brightness-125')}>
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest">Gate {gate.gate}</span>
-              <span className="text-[11px] font-bold">{gate.outcome}</span>
-            </div>
-            <div className="mt-0.5 text-[11px] font-medium text-slate-200">{GATE_TITLE[gate.gate]}</div>
-            <div className="mt-1 line-clamp-2 text-[10px] leading-tight opacity-80">{gate.reason}</div>
-          </button>
-        ))}
+        {frame.gates.map((gate) => {
+          const isOpen = open === gate.gate;
+          return (
+            <motion.button key={gate.gate} type="button" {...pressable}
+              data-tone={outcomeTone(gate.outcome)}
+              aria-expanded={isOpen}
+              onClick={() => setOpen(isOpen ? null : gate.gate)}
+              className={cn(
+                'rounded-md border p-2.5 text-left transition-colors duration-150',
+                toneClass(outcomeTone(gate.outcome)),
+                isOpen ? 'ring-1 ring-accent/50' : 'hover:brightness-110',
+              )}>
+              <div className="flex items-center justify-between gap-1">
+                <span className="tnum text-[10px] font-semibold uppercase tracking-[0.08em]">Gate {gate.gate}</span>
+                <span className="tnum text-[11px] font-semibold">{gate.outcome}</span>
+              </div>
+              <div className="mt-0.5 text-[11px] font-medium text-ink">{GATE_TITLE[gate.gate]}</div>
+              <div className="mt-1 line-clamp-2 text-[10px] leading-tight opacity-80">{gate.reason}</div>
+            </motion.button>
+          );
+        })}
       </div>
 
       {frame.suppressed ? (
-        <div className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
+        <div className="rounded-md border border-state-info/30 bg-state-info/10 px-3 py-2 text-xs text-state-info">
           <strong>Gate 2 blocked an exercise false alarm.</strong> {frame.suppression_reason}
-          <div className="mt-0.5 text-[10px] text-sky-300/80">
+          <div className="mt-0.5 text-[10px] opacity-80">
             Suppression is bounded by a hard HR ceiling and a hold timeout, and never applies to a non-rate finding.
           </div>
         </div>
       ) : null}
 
       {frame.non_rate_flags.length ? (
-        <div className="rounded-lg border border-alert/50 bg-alert/10 px-3 py-2 text-xs text-alert">
+        <div className="rounded-md border border-state-alert/30 bg-state-alert/10 px-3 py-2 text-xs text-state-alert">
           <strong>Non-rate finding — never suppressed:</strong> {frame.non_rate_flags.join(', ')}
         </div>
       ) : null}
 
-      {active ? <GateEvidence gate={active} /> : null}
+      <AnimatePresence initial={false}>
+        {active ? (
+          <motion.div key={active.gate}
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: EASE_CRISP }}
+            className="overflow-hidden">
+            <GateEvidence gate={active} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
 
 function GateEvidence({ gate }: { gate: GateVerdict }) {
   return (
-    <div className="rounded-lg border border-ink-600 bg-ink-900/70 p-3">
+    <div className="rounded-md border border-hairline bg-base p-3">
       <div className="mb-1 flex items-center gap-2">
         <Badge tone={outcomeTone(gate.outcome)}>Gate {gate.gate} · {gate.outcome}</Badge>
-        <span className="text-xs text-slate-400">{GATE_TITLE[gate.gate]}</span>
+        <span className="text-xs text-ink-muted">{GATE_TITLE[gate.gate]}</span>
       </div>
-      <p className="mb-2 text-[11px] leading-relaxed text-slate-400">{GATE_RULE[gate.gate]}</p>
+      <p className="mb-2 text-[11px] leading-relaxed text-ink-muted">{GATE_RULE[gate.gate]}</p>
       <dl className="grid gap-1 sm:grid-cols-2">
         {Object.entries(gate.evidence).map(([key, value]) => (
-          <div key={key} className="flex justify-between gap-2 border-b border-ink-700 py-0.5 text-[11px]">
-            <dt className="text-slate-500">{key}</dt>
-            <dd className="font-mono text-slate-200">{render(value)}</dd>
+          <div key={key} className="flex justify-between gap-2 border-b border-hairline/50 py-0.5 text-[11px]">
+            <dt className="text-ink-faint">{key}</dt>
+            <dd className="tnum text-ink-secondary">{render(value)}</dd>
           </div>
         ))}
       </dl>

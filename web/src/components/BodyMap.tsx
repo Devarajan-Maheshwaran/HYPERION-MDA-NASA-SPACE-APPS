@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import type { OrganReading } from '../lib/types';
 import { organTone, toneClass } from '../lib/status';
 import { cn } from '../lib/utils';
@@ -14,28 +15,32 @@ const POSITION: Record<string, { x: number; y: number }> = {
 };
 
 const FILL: Record<string, string> = {
-  nominal: '#22c55e',
-  watch: '#f59e0b',
-  alert: '#ef4444',
-  unknown: '#64748b',
-  info: '#38bdf8',
+  nominal: '#3FB950',
+  watch: '#DB6D28',
+  alert: '#F85149',
+  unknown: '#6E7681',
+  info: '#58A6FF',
 };
 
 export function BodyMap({
-  organs,
-  selected,
-  onSelect,
+  organs, selected, onSelect,
 }: {
   organs: OrganReading[];
   selected: string | null;
   onSelect: (system: string) => void;
 }) {
+  const onKey = (event: KeyboardEvent<SVGGElement>, system: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect(system);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
-      <svg viewBox="0 0 200 420" className="h-[340px] w-[170px] shrink-0" role="img"
+      <svg viewBox="0 0 200 420" className="h-[300px] w-[150px] shrink-0" role="group"
         aria-label="Clickable body map showing demo organ status">
-        {/* Neutral outline, deliberately not anatomical detail */}
-        <g fill="none" stroke="#334155" strokeWidth="2">
+        <g fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5">
           <circle cx="100" cy="42" r="26" />
           <path d="M100 68 L100 200" />
           <path d="M64 96 L136 96" />
@@ -51,37 +56,45 @@ export function BodyMap({
           const tone = organTone(organ.status);
           const isSelected = selected === organ.system;
           return (
-            <g key={organ.system} className="cursor-pointer" onClick={() => onSelect(organ.system)}>
-              <circle cx={pos.x} cy={pos.y} r={isSelected ? 15 : 12}
-                fill={FILL[tone]} fillOpacity={isSelected ? 0.9 : 0.55}
-                stroke={isSelected ? '#e2e8f0' : FILL[tone]} strokeWidth={isSelected ? 2.5 : 1.5} />
+            <g key={organ.system} role="button" tabIndex={0} aria-pressed={isSelected}
+              aria-label={`${organ.label}: ${organ.status}`}
+              className="cursor-pointer focus-visible:outline-none"
+              onClick={() => onSelect(organ.system)} onKeyDown={(event) => onKey(event, organ.system)}>
+              <circle cx={pos.x} cy={pos.y} r={isSelected ? 14 : 11}
+                fill={FILL[tone]} fillOpacity={isSelected ? 0.85 : 0.45}
+                stroke={isSelected ? '#F59E0B' : FILL[tone]} strokeWidth={isSelected ? 2 : 1.25} />
               <title>{`${organ.label}: ${organ.status}`}</title>
             </g>
           );
         })}
       </svg>
 
-      <div className="grid flex-1 gap-1.5">
+      <div className="grid flex-1 content-start gap-1.5">
         {organs.map((organ) => {
           const tone = organTone(organ.status);
           return (
             <button key={organ.system} type="button" onClick={() => onSelect(organ.system)}
+              aria-pressed={selected === organ.system}
               className={cn(
-                'flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors',
-                selected === organ.system ? 'border-slate-400 bg-ink-700' : 'border-ink-600 bg-ink-900/50 hover:bg-ink-700/60',
+                'flex items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors duration-150',
+                selected === organ.system
+                  ? 'border-accent/40 bg-accent-dim'
+                  : 'border-hairline bg-base hover:bg-white/[0.03]',
               )}>
               <div className="min-w-0">
-                <div className="truncate text-xs font-semibold text-slate-100">{organ.label}</div>
-                <div className="truncate text-[10px] text-slate-500">{organ.indicator}</div>
+                <div className="truncate text-xs font-semibold text-ink">{organ.label}</div>
+                <div className="truncate text-[10px] text-ink-faint">{organ.indicator}</div>
               </div>
-              <span className={cn('shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase',
-                toneClass(tone))}>
+              <span data-tone={tone} className={cn(
+                'tnum shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em]',
+                toneClass(tone),
+              )}>
                 {organ.status === 'NOT_AVAILABLE' ? 'N/A' : organ.status}
               </span>
             </button>
           );
         })}
-        <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+        <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
           Grey means unknown or not available — never healthy. Status comes from a demo rule table
           applied to crew-entered checks, not from a validated clinical model.
         </p>
@@ -92,36 +105,36 @@ export function BodyMap({
 
 export function OrganDetail({ organ }: { organ: OrganReading | null }) {
   if (!organ) {
-    return <p className="text-xs text-slate-500">Select a system on the body map to see its evidence.</p>;
+    return <p className="text-xs text-ink-faint">Select a system on the body map to see its evidence.</p>;
   }
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold text-slate-100">{organ.label}</h4>
+        <h4 className="text-sm font-semibold text-ink">{organ.label}</h4>
         <Badge tone={organTone(organ.status)}>{organ.status}</Badge>
       </div>
       <dl className="grid gap-1.5 text-xs">
         <Row label="Indicator" value={organ.indicator} />
         <Row label="Spaceflight hazard" value={organ.hazard} />
         <Row label="Demo threshold" value={organ.demo_threshold} />
-        <Row label=" staleness τ" value={organ.staleness_tau === null ? 'Not available' : organ.staleness_tau.toFixed(2)} />
+        <Row label="Staleness τ" value={organ.staleness_tau === null ? 'Not available' : organ.staleness_tau.toFixed(2)} />
         <Row label="Age" value={organ.age_hours === null ? 'Not available' : `${organ.age_hours.toFixed(1)} h`} />
         <Row label="Evidence" value={organ.evidence} />
       </dl>
-      <div className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-sky-300">Guided action</div>
-        <div className="text-sm font-medium text-slate-100">{organ.action}</div>
+      <div className="rounded-md border border-hairline bg-base px-3 py-2">
+        <div className="microlabel">Guided action</div>
+        <div className="mt-0.5 text-sm font-medium text-ink">{organ.action}</div>
       </div>
-      <p className="text-[10px] text-slate-500">{organ.threshold_label}</p>
+      <p className="text-[10px] text-ink-faint">{organ.threshold_label}</p>
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-2">
-      <dt className="w-28 shrink-0 capitalize text-slate-500">{label.trim()}</dt>
-      <dd className="flex-1 text-slate-300">{value}</dd>
+    <div className="flex gap-2 border-b border-hairline/50 pb-1">
+      <dt className="w-28 shrink-0 text-ink-faint">{label}</dt>
+      <dd className="tnum flex-1 text-ink-secondary">{value}</dd>
     </div>
   );
 }

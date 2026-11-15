@@ -1,12 +1,16 @@
 import * as React from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Check, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { useSession } from '../hooks/useSession';
 import type { Alert } from '../lib/types';
 import { AlertBanner, Badge, Button, Card, CardContent, CardDescription, CardHeader,
-  CardTitle, Dialog, EmptyState, Table, Td, Textarea, Th } from '../components/ui';
+  CardTitle, Dialog, EmptyState, StatusDot, Table, Td, Textarea, Th } from '../components/ui';
 import { LaneBadge } from '../components/AppShell';
 import { formatTime } from '../lib/utils';
 import { stateLabel, stateTone } from '../lib/status';
+import { zoneContainer, zoneItem, SPRING } from '../lib/motion';
+import { cn } from '../lib/utils';
 
 export function SurgeonQueue() {
   const { role, subjects, subjectId } = useSession();
@@ -15,6 +19,7 @@ export function SurgeonQueue() {
   const [acking, setAcking] = React.useState<Alert | null>(null);
   const [note, setNote] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(async () => {
     try {
@@ -23,6 +28,8 @@ export function SurgeonQueue() {
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
       setAlerts([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -52,108 +59,136 @@ export function SurgeonQueue() {
   const canAck = role === 'flight-surgeon';
 
   return (
-    <div className="space-y-4">
-      {error ? <AlertBanner tone="alert" title="Alert queue unavailable">{error}
-        <div>Treat the queue as UNKNOWN until it reloads.</div></AlertBanner> : null}
+    <motion.div variants={zoneContainer} initial="hidden" animate="show" className="space-y-3">
+      {error ? (
+        <AlertBanner tone="alert" title="Alert queue unavailable">
+          {error}<div>Treat the queue as UNKNOWN until it reloads.</div>
+        </AlertBanner>
+      ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {subjects.map((subject) => {
-          const subjectAlerts = open.filter((alert) => alert.subject_id === subject.subject_id);
-          const worst = subjectAlerts.some((alert) => alert.severity === 'ALERT') ? 'SURGEON_ALERT'
-            : subjectAlerts.length ? 'CREW_CHECK' : 'UNKNOWN';
-          return (
-            <Card key={subject.subject_id} className={subject.subject_id === subjectId ? 'ring-1 ring-sky-500' : ''}>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-slate-100">{subject.subject_id}</span>
-                  <Badge tone={subjectAlerts.length ? stateTone(worst) : 'unknown'}>
-                    {subjectAlerts.length ? stateLabel(worst) : 'No open alert'}
+      <motion.div variants={zoneItem}>
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-2 py-3">
+            <span className="microlabel mr-1">Crew</span>
+            {subjects.map((subject) => {
+              const subjectAlerts = open.filter((alert) => alert.subject_id === subject.subject_id);
+              const worst = subjectAlerts.some((alert) => alert.severity === 'ALERT') ? 'SURGEON_ALERT'
+                : subjectAlerts.length ? 'CREW_CHECK' : null;
+              return (
+                <span key={subject.subject_id} className={cn(
+                  'flex items-center gap-2 rounded-md border px-2.5 py-1.5',
+                  subject.subject_id === subjectId ? 'border-accent/40 bg-accent-dim' : 'border-hairline bg-base',
+                )}>
+                  <StatusDot tone={worst ? stateTone(worst) : 'unknown'} pulse={Boolean(worst)} />
+                  <span className="tnum text-xs text-ink">{subject.subject_id}</span>
+                  <span className="text-[10px] text-ink-faint">
+                    {worst ? stateLabel(worst) : 'No open alert'}
+                  </span>
+                  <Badge tone={subject.calibration.calibrated ? 'info' : 'unknown'}>
+                    {subject.calibration.calibrated ? 'cal' : 'uncal'}
                   </Badge>
-                </div>
-                <div className="text-[11px] text-slate-500">{subject.label}</div>
-                <Badge tone={subject.calibration.calibrated ? 'info' : 'unknown'}>
-                  {subject.calibration.calibrated ? 'Demo calibration present' : 'Uncalibrated'}
-                </Badge>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </span>
+              );
+            })}
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Open alerts ({open.length})</CardTitle>
-            <CardDescription>
-              Deterministic gate output only. Acknowledgement is audited in the local hash chain.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2"><LaneBadge /><Button variant="outline" size="sm" onClick={() => void load()}>Refresh</Button></div>
-        </CardHeader>
-        <CardContent>
-          {open.length === 0 ? (
-            <EmptyState title="No open alerts" detail="Alerts appear when a scenario produces a surgeon alert or a crew-check hold." />
-          ) : (
-            <div className="space-y-2">
-              {open.map((alert) => (
-                <div key={alert.alert_id} className="rounded-lg border border-ink-600 bg-ink-900/60 p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={alert.severity === 'ALERT' ? 'alert' : 'watch'}>{alert.severity}</Badge>
-                    <Badge tone={stateTone(alert.state)}>{stateLabel(alert.state)}</Badge>
-                    <span className="text-xs text-slate-400">{alert.subject_id}</span>
-                    <Badge tone="info">{alert.lane}</Badge>
-                    <span className="ml-auto text-[11px] text-slate-500">{formatTime(alert.created_at)}</span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-slate-300">{alert.reason}</p>
-                  {alert.non_rate_flags.length ? (
-                    <p className="mt-1 text-xs font-semibold text-alert">
-                      Non-rate finding (never suppressed): {alert.non_rate_flags.join(', ')}
-                    </p>
-                  ) : null}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {alert.actions.map((action) => (
-                      <span key={action} className="rounded border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-[11px] text-slate-100">
-                        {action}
-                      </span>
-                    ))}
-                    <Button size="sm" className="ml-auto" disabled={!canAck}
-                      onClick={() => { setAcking(alert); setNote(''); }}>
-                      {canAck ? 'Acknowledge' : 'Surgeon role required'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      <motion.div variants={zoneItem}>
+        <Card>
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle>Open alerts <span className="tnum text-ink-muted">({open.length})</span></CardTitle>
+              <CardDescription>Deterministic gate output only. Acknowledgement is audited in the local hash chain.</CardDescription>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="flex items-center gap-2">
+              <LaneBadge />
+              <Button variant="outline" size="sm" onClick={() => void load()}>
+                <RefreshCw size={12} strokeWidth={1.75} /> Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-4 text-xs text-ink-faint">Loading queue…</div>
+            ) : open.length === 0 ? (
+              <div className="p-4">
+                <EmptyState title="No open alerts" detail="Alerts appear when a scenario produces a surgeon alert or a crew-check hold." />
+              </div>
+            ) : (
+              <ul className="divide-y divide-hairline">
+                <AnimatePresence initial={false}>
+                  {open.map((alert) => (
+                    <motion.li key={alert.alert_id} layout initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={SPRING}
+                      className="px-4 py-3 transition-colors hover:bg-white/[0.02]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusDot tone={alert.severity === 'ALERT' ? 'alert' : 'watch'} pulse />
+                        <Badge tone={alert.severity === 'ALERT' ? 'alert' : 'watch'}>{alert.severity}</Badge>
+                        <Badge tone={stateTone(alert.state)}>{stateLabel(alert.state)}</Badge>
+                        <span className="tnum text-xs text-ink-secondary">{alert.subject_id}</span>
+                        <Badge tone="unknown">{alert.lane}</Badge>
+                        <span className="tnum ml-auto text-[11px] text-ink-faint">{formatTime(alert.created_at)}</span>
+                      </div>
+                      <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">{alert.reason}</p>
+                      {alert.non_rate_flags.length ? (
+                        <p className="mt-1 text-xs font-semibold text-state-alert">
+                          Non-rate finding (never suppressed): {alert.non_rate_flags.join(', ')}
+                        </p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {alert.actions.map((action) => (
+                          <span key={action} className="rounded border border-hairline bg-base px-2 py-1 text-[11px] text-ink">
+                            {action}
+                          </span>
+                        ))}
+                        <Button size="sm" className="ml-auto" disabled={!canAck}
+                          onClick={() => { setAcking(alert); setNote(''); }}>
+                          <Check size={12} strokeWidth={1.75} />
+                          {canAck ? 'Acknowledge' : 'Surgeon role required'}
+                        </Button>
+                      </div>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      <Card>
-        <CardHeader><CardTitle>Acknowledged ({closed.length})</CardTitle></CardHeader>
-        <CardContent>
-          {closed.length === 0 ? <EmptyState title="Nothing acknowledged yet" /> : (
-            <Table>
-              <thead><tr><Th>Time</Th><Th>Subject</Th><Th>State</Th><Th>By</Th><Th>Note</Th></tr></thead>
-              <tbody>
-                {closed.map((alert) => (
-                  <tr key={alert.alert_id}>
-                    <Td>{formatTime(alert.acknowledged_at ?? '')}</Td>
-                    <Td>{alert.subject_id}</Td>
-                    <Td>{stateLabel(alert.state)}</Td>
-                    <Td>{alert.acknowledged_by}</Td>
-                    <Td className="max-w-[280px] truncate">{alert.ack_note || '—'}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <motion.div variants={zoneItem}>
+        <Card>
+          <CardHeader><CardTitle>Acknowledged <span className="tnum text-ink-muted">({closed.length})</span></CardTitle></CardHeader>
+          <CardContent className="p-0">
+            {closed.length === 0 ? (
+              <div className="p-4"><EmptyState title="Nothing acknowledged yet" /></div>
+            ) : (
+              <div className="max-h-[360px] overflow-auto">
+                <Table>
+                  <thead><tr><Th>Time</Th><Th>Subject</Th><Th>State</Th><Th>By</Th><Th>Note</Th></tr></thead>
+                  <tbody>
+                    {closed.map((alert) => (
+                      <tr key={alert.alert_id} className="transition-colors hover:bg-white/[0.02]">
+                        <Td>{formatTime(alert.acknowledged_at ?? '')}</Td>
+                        <Td>{alert.subject_id}</Td>
+                        <Td className="font-sans">{stateLabel(alert.state)}</Td>
+                        <Td>{alert.acknowledged_by}</Td>
+                        <Td className="max-w-[280px] truncate font-sans">{alert.ack_note || '—'}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       <Dialog open={acking !== null} title="Acknowledge alert" onClose={() => setAcking(null)}>
         <div className="space-y-3">
-          <p className="text-xs text-slate-400">
-            {acking?.subject_id} · {acking ? stateLabel(acking.state) : ''} · {acking?.reason}
+          <p className="text-xs text-ink-muted">
+            <span className="tnum">{acking?.subject_id}</span> · {acking ? stateLabel(acking.state) : ''} · {acking?.reason}
           </p>
           <Textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)}
             placeholder="Optional note (audited, no raw measurements stored)" />
@@ -165,6 +200,6 @@ export function SurgeonQueue() {
           </div>
         </div>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
