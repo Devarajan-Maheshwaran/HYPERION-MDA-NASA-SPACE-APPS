@@ -6,3 +6,7 @@ build/
 dist/
 *.zip.tmp
 reference-material/Original-Reference-Slides.pdf
+node_modules/
+web/dist/
+.vite/
+*.local
