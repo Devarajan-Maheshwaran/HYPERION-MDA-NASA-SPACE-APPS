@@ -50,7 +50,8 @@ beforeEach(() => {
     current = { ...current, comms: { ...current.comms!, blackout } };
     return { ...current, packets: current.comms!.packets, blackout };
   });
-  mocked.acknowledgePacket.mockImplementation(async () => {
+  mocked.acknowledgePacket.mockImplementation(async (_packetId, _directive, role) => {
+    if (role !== 'flight-surgeon') throw new Error('403 demo role required');
     current = acknowledgedState();
     return { ...current, receipt: current.comms!.packets[0]!.receipt! };
   });
@@ -169,10 +170,13 @@ describe('store-and-forward surgeon loop', () => {
     const assertQuiet = await renderCockpit();
     const send = screen.getByRole('button', { name: /Acknowledge & send directive/ });
     expect(send).toHaveProperty('disabled', true);
-    fireEvent.change(screen.getByLabelText(/Act as Flight Surgeon/), { target: { value: 'Recheck ONSD in 30 minutes.' } });
+    fireEvent.change(screen.getByLabelText(/Acknowledge & send directive/), { target: { value: 'Recheck ONSD in 30 minutes.' } });
+    // Directive alone is not enough: the demo role switch must be explicit.
+    expect(send).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByLabelText(/Act as Flight Surgeon \(demo role\)/));
     expect(send).toHaveProperty('disabled', false);
     fireEvent.click(send);
-    await waitFor(() => expect(mocked.acknowledgePacket).toHaveBeenCalledWith('pkt-abcdefgh', 'Recheck ONSD in 30 minutes.'));
+    await waitFor(() => expect(mocked.acknowledgePacket).toHaveBeenCalledWith('pkt-abcdefgh', 'Recheck ONSD in 30 minutes.', 'flight-surgeon'));
     await screen.findByText('S4_SURGEON_ACKNOWLEDGED');
     expect(screen.getByText(/Receipt rcpt-abcdefgh/)).toBeTruthy();
     assertQuiet();

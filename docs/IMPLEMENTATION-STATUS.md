@@ -1,6 +1,15 @@
 # Implementation status
 
-Updated 2026-11-15 (OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded lane + M6 LOPO baselines experiment), with the review R1 assay-rejection fix and the R3/R6 documentation reconciliation applied afterwards.
+Updated 2026-11-14 (live crew cockpit wave): backend-owned 1 Hz mission clock + SSE,
+SQLite case persistence with verified restart resume, persisted S0–S4 workflow, store-and-
+forward surgeon outbox with blackout/delay/hashed receipts, recorded-non-astronaut replay,
+OSD-575/GOES provenance panels, measured FL/DP benchmark artifact + Docs rendering,
+Dockerfile/compose/healthcheck and `run_workstation.sh --offline`. Verification: tests_api
+152 passed + 79 subtests; full pytest 324 passed / 41 skipped / 207 subtests; web 48 tests /
+10 files + typecheck + build; HTTP smoke 58/58; FL/DP `--verify` byte-for-byte. Docker image
+not built here (no daemon); real-browser Playwright still unavailable.
+
+Prior: OSD-575 candidate + M2 channel panel + demo lanes + M5 PhysioNet recorded lane + M6 LOPO baselines experiment, with the review R1 assay-rejection fix and the R3/R6 documentation reconciliation applied afterwards.
 
 > **Archive note:** earlier versions of this file referenced `dist/HYPERION-MDA-Prototype.zip`. That archive is **not present in this repository** (`dist/` is git-ignored) and no builder for it is included. Nothing in the current build depends on it.
 >

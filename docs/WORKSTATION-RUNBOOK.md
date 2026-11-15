@@ -4,37 +4,69 @@
 `HYPERION_MDA.pdf`, built as React 18 + TypeScript strict + Vite + Tailwind + Radix
 Popover + Motion + Recharts over a FastAPI composition layer. The UI follows
 [docs/FRONTEND-DESIGN.md](FRONTEND-DESIGN.md): a Swiss Clinical Minimalist light theme
-with exactly three views — Overview, Crew Workstation, ML Architecture & Docs.
+with three views — **Crew Workstation (`/`, the boot route)**, Overview (`/overview`) and
+ML Architecture & Docs (`/docs`). All three stay in the header navigation.
+
+**The workstation is live by default.** Booting `/` seeds the labelled
+`SIMULATED_FALLBACK · nominal-orbital` case and starts a 1 Hz mission clock that drives the
+organ panels, the freshness decay, the S0–S4 lifecycle and the communications outbox.
 
 **What it is not:** a medical device. No clinical validation, no NASA approval, no flight
 readiness. Demo thresholds throughout. Read `docs/SAFETY_ISSUES.md` before presenting it.
 
 ---
 
-## 1. Install
+## 1. Install & run (pick one)
 
-The desktop app stays standard-library only. The API needs its own virtualenv.
-
-```bash
-python -m venv .venv-api
-# Windows: .venv-api\Scripts\activate
-. .venv-api/bin/activate
-pip install -r requirements-api.txt
-```
-
-```bash
-cd web
-npm ci          # reproducible install from package-lock.json
-```
-
-## 2. Run
-
-**One command (bootstrap + build + launch):**
+### A. One command (bootstrap + build + launch)
 
 ```bash
 bash run_workstation.sh
 # open http://localhost:8000
 ```
+
+Creates `.venv-api`, installs `requirements-api.txt`, runs `npm ci` + `npm run build` in
+`web/`, then serves everything from one process on `0.0.0.0:8000`.
+
+### B. Offline rerun (no package index, no CDN)
+
+After one successful run of A, everything needed is on disk:
+
+```bash
+bash run_workstation.sh --offline
+```
+
+This refuses to touch the network: it reuses `.venv-api` and `web/dist`, verifies the API
+dependencies import, and launches. Fonts are bundled locally via `@fontsource`, so the
+cockpit renders with no external requests.
+
+### C. Docker
+
+```bash
+docker compose up --build          # open http://localhost:8000
+docker compose restart workstation # clock, stage, exams, outbox and audit survive
+docker compose down                # state survives in the named volume
+docker compose down -v             # state deliberately destroyed
+```
+
+Multi-stage build (`node:22` -> `python:3.11-slim`), runs as an unprivileged user, exposes
+only port 8000, and ships a `HEALTHCHECK` against `/api/health`. The `hyperion-state` named
+volume holds `/app/var/hyperion-state.db`, which is what makes restart persistence real.
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HOST` | `0.0.0.0` | bind address |
+| `PORT` | `8000` | port |
+| `HYPERION_STATE_DB` | `var/hyperion-state.db` | durable SQLite case store |
+| `HYPERION_MDA_DATA_DIR` | unset | optional cache root for OSD-575 / PhysioNet / GOES lanes |
+| `HYPERION_AUDIT_LOG` | `<state dir>/audit.jsonl` | durable audit JSONL |
+
+Absent external data is reported as `NOT_AVAILABLE` with an explanation; nothing is
+downloaded at startup and no value is invented.
+
+## 2. Serving
 
 `backend_api.py` is the single-process entrypoint. It serves the built React SPA and the
 unified `/api/state`, `/api/scenario`, `/api/exams/*` endpoints on the same origin — no CORS,
@@ -59,7 +91,8 @@ cd web && npm run dev          # http://localhost:5173
 The browser only ever requests relative `/api/...`; Vite proxies those to port 8000. No
 browser-facing code addresses `localhost`.
 
-Optional audit persistence (otherwise the chain is in-memory and clears on restart):
+The audit chain is durable in SQLite by default. `HYPERION_AUDIT_LOG` adds an optional
+JSONL mirror; it is no longer required for restart persistence:
 
 ```bash
 HYPERION_AUDIT_LOG=/tmp/hyperion-audit.jsonl .venv-api/bin/python backend_api.py
@@ -71,24 +104,67 @@ Optional real-data cache:
 HYPERION_MDA_DATA_DIR=/path/to/cache .venv-api/bin/python backend_api.py
 ```
 
-## 3. Navigation
+## 3. Navigation & cockpit layout
 
-- The app lands on **Overview** (`/`): a 15-second mission explanation, three problem→solution
-  cards, and a clickable architecture strip. The primary CTA opens the Crew Workstation.
-- A persistent 64px sticky header switches between `01. Overview`, `02. Crew Workstation`
-  (`/workstation`) and `03. ML Architecture & Docs` (`/docs`).
-- The right-hand provenance pill opens a popover with OSD-575 / GOES / WESAD availability
-  and switches between Real Empirical Data and explicitly labelled Simulated Scenario Fallback.
-- **Crew Workstation** is a 40/60 layout: six-node body map + organ detail on the left;
-  Tab A (3-stage gate, one chart, triage) and Tab B (readiness + PVT / ultrasound / vitals)
-  on the right. Habitat pills and five scenario buttons sit above the workspace.
-- **Docs** contains model specs, requested benchmarks with explicit provenance, measured M6
-  rows, demo threshold tables, official NASA/CSA links and the local SHA-256 audit ledger.
+- The app lands on **Crew Workstation** (`/`). `/workstation` redirects there. Overview is
+  `/overview` and Docs is `/docs`; the header shows `01. Crew Workstation`, `02. Overview`,
+  `03. ML Architecture & Docs`.
+- **Control strip** (always at the top): `LIVE 1.0 Hz` + `T+…` mission clock, Pause/Play,
+  **Step +10 s**, **Reset Case**, five simulated scenario buttons plus a **Recorded human**
+  replay selector, habitat/comms selector, **Rover blackout** toggle and an SSE health badge
+  (`SSE live` / `SSE connecting` / `polling` / `offline`).
+- **Main workspace** is a 3 / 5 / 4 grid on `xl`:
+  - **left (3)** — six-node body map, organ summary grid, organ detail panel;
+  - **centre (5)** — `LifecycleBanner` (S0–S4, pulsing amber `ACTION REQUIRED TO RESOLVE S2
+    HOLD`), the live three-gate strip, `InstrumentBay` (always-visible PVT / Eye ONSD /
+    Vitals tabs that auto-focus the requested exam), `TriagePlan`, `ActiveSensingList`, and
+    exactly one raw-HR/residual chart;
+  - **right (4)** — `CommsOutbox` (packet lifecycle + SBAR drawer + inline *Act as Flight
+    Surgeon* acknowledgement) and `ProvenancePanel` (OSD-575 drawer, replay lane, GOES pfu).
+- Below the fold: the full `GatePipeline` + residual chart, readiness, countermeasures and
+  overlays — all fed by the same live state.
+- **Docs** contains model specs, the requested-benchmark matrix, the **measured FL/DP
+  benchmark rendered from the committed artifact**, measured M6 rows, demo thresholds,
+  official NASA/CSA links and the local SHA-256 audit ledger.
+
+### Streaming and the clock
+
+`GET /api/stream/events` emits both `frame` (chart tick) and `state` (full cockpit snapshot)
+events at 1 Hz. The provider consumes `state`, falls back to a 2 s `GET /api/state` poll if
+SSE drops, and resyncs every 20 s while live so out-of-band packet transitions are never
+missed. The mission clock lives in the backend; `Step +10 s` advances it by exactly ten
+mission seconds, and freshness `tau` uses **60 mission seconds = 1 demo hour** (an explicit
+time-compression convention, surfaced in the clock tooltip).
+
+### Case lifecycle and comms
+
+`S0_NOMINAL -> S1_EXERTION_COMPENSATED -> S2_ACTIVE_SENSING_HOLD ->
+S3_CREW_COUNTERMEASURE -> S4_SURGEON_ESCALATED -> S4_SURGEON_ACKNOWLEDGED`.
+The banner states that this is a **DEMO routing table, not clinically validated**. Escalation
+builds an SBAR packet with a hashed payload; comms delay is habitat-dependent (station
+0.2 s, lunar 1.3 s, transit 12 s, rover 5 s), a blackout parks packets in `QUEUED_BLACKOUT`,
+and only a `flight-surgeon` role may acknowledge a `DELIVERED` packet. Acknowledgement
+returns a SHA-256 receipt — **no blockchain exists**.
+
+`POST /api/case/reset` returns the case to `S0_NOMINAL` with zero packets while preserving
+the audit chain and adding two `CASE_RESET_*` blocks.
+
+### Reproducing the measured benchmark
+
+```bash
+python3 scripts/run_fl_dp_benchmark.py --quick    # smoke config, writes nothing
+python3 scripts/run_fl_dp_benchmark.py            # full run, writes artifacts/
+python3 scripts/run_fl_dp_benchmark.py --verify   # recompute and compare byte-for-byte
+```
+
+Reads only committed M6 CSVs, needs no network, and the UI renders the JSON through
+`GET /api/benchmark/fl-dp`. The accounting is **window-level, not participant-level**; the
+Docs page states this on screen next to the numbers.
 
 ## 4. First run — the honest path
 
-1. Open the app. It lands on **Overview**. Click **Launch Live Crew Workstation**. The
-   workstation shows the amber **SIMULATED SCENARIO FALLBACK ACTIVE** banner; the seeded
+1. Open the app. It lands **directly on the Crew Workstation** with the clock already
+   running. The amber **SIMULATED SCENARIO FALLBACK ACTIVE** banner is visible; the seeded
    `nominal-orbital` scenario is an explicitly labelled non-flight simulation.
 2. Select **Exercise Bout Blocks False Alarm**. Raw HR rises toward ~148 bpm while the
    residual stays near zero. Gate 2 shows **BLOCK** and the amber false-alarm shield appears.
@@ -133,8 +209,10 @@ The role selector is **demo-grade and not authentication**. Anyone can pick any 
 | Ops | Calibrate, run scenarios, refresh GOES, read lanes and audit |
 | Researcher | Read-only state/docs, M6 results, registry, provenance, audit; cannot run scenarios or acknowledge |
 
-The rebuilt UI defaults to the crew role and does not expose a role switcher; roles remain
-demo-grade `X-Role` headers on the unchanged API, not authentication.
+The cockpit defaults to the crew role. The outbox exposes one explicit, labelled
+**Act as Flight Surgeon (demo role)** checkbox for acknowledgement; it sends `X-Role:
+flight-surgeon` only for that request. Roles remain demo-grade headers, not authentication.
+Do not host this with real PHI.
 
 ## 6. Tests
 
@@ -144,17 +222,20 @@ PYTHONPATH=src python -m unittest discover -s tests
 PYTHONPATH=src .venv/bin/python -m unittest discover -s experiments/m6/tests
 python experiments/m6/verify_m6.py
 
-# API suite (70 tests, pytest)
+# API suite (152 tests + subtests, pytest)
 .venv-api/bin/python -m pytest tests_api -q
 
 # full Python suite (core + API + M6)
-PYTHONPATH=src .venv-api/bin/python -m pytest tests tests_api experiments/m6/tests -q
+PYTHONPATH=src .venv-api/bin/python -m pytest -q
 
-# web: strict typecheck, 27 unit/DOM tests, production build
+# web: strict typecheck, 48 unit/DOM tests, production build
 cd web && npm run typecheck && npm test && npm run build
 
-# end-to-end against a RUNNING server (42 checks)
+# end-to-end against a RUNNING server (58 checks)
 python scripts/smoke_workstation.py --base http://127.0.0.1:8000
+
+# measured FL/DP artifact: reproduce and verify byte-for-byte
+python scripts/run_fl_dp_benchmark.py --verify
 ```
 
 ## 7. Real data lanes
@@ -176,18 +257,26 @@ returns the verified rows.
 - No browser binary was available in the build environment, so the UI was verified with
   jsdom component renders, a strict typecheck, a production build and HTTP smoke checks —
   **not** with a real-browser screenshot or Playwright run.
-- Frontend state is process-local on the server; restarting the API clears calibrations,
-  checks and alerts unless `HYPERION_AUDIT_LOG` is set (which persists only the audit chain).
-- The rebuilt UI polls `/api/state` every 15 seconds and re-evaluates immediately after a
-  scenario or exam POST. The legacy `/api/stream/step` / SSE endpoints remain available and
-  tested, but the new three-view UI does not drive a background server-side worker.
+- Case state is durable in SQLite (`HYPERION_STATE_DB`, default `var/hyperion-state.db`).
+  Restarting the process resumes the same mission clock, lifecycle stage, exams,
+  calibrations, alerts, outbox and audit chain. `:memory:` opts out deliberately.
+- The cockpit is SSE-first: `GET /api/stream/events` carries `frame` + `state` at 1 Hz.
+  If SSE drops, the provider falls back to a 2 s `/api/state` poll and retries SSE after
+  2 s; while live it resyncs every 20 s. The backend owns the clock.
 - Implemented in the unified cockpit: dual-mode state engine, five labelled demo scenarios,
   `/api/state`, `/api/scenario`, `/api/exams/{pvt,ultrasound,vitals}`, GOES cached/live loader
   (`/api/goes/refresh`), manual ONSD caliper with pixel→mm math, multi-signal demo organ rules,
   split-conformal demo quantile, cosine-median bit-flip demo, and `contracts/HealthAudit.sol`
   as a **reference only** contract.
+- Measured offline FL/DP benchmark exists (`scripts/run_fl_dp_benchmark.py`,
+  `artifacts/fl_dp_benchmark_results.json`, `/api/benchmark/fl-dp`, Docs panel). It is a
+  numpy DP-SGD + exact RDP experiment on committed non-astronaut M6 windows, with a
+  **window-level** threat model. It is not Flower, not Opacus, not participant-level DP,
+  and not a clinical or astronaut result.
 - Still not implemented / not claimed: neural risk heads, MC-dropout σ_epistemic, conformal
   coverage guarantees, sklearn LR/RF baselines, PyTorch HyperionCoreNet, real Flower FL,
-  Opacus DP-SGD (ε,δ), WESAD (gate NO-GO), automated ultrasound diagnosis, flux→dose
+  Opacus DP-SGD, WESAD (gate NO-GO), automated ultrasound diagnosis, flux→dose
   conversion, and a deployed EVM ledger. The ML panel lists these as `NOT_IMPLEMENTED`.
   `docs/REQUIREMENTS-TRACEABILITY.md` tracks each one.
+- Dockerfile/compose are provided but were not built in this sandbox (no Docker daemon).
+  The offline launcher, SPA build, API suites and HTTP smoke were executed directly.

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, subscribeState } from '../lib/api';
-import type { OutboxPacket, WorkstationState } from '../lib/types';
+import type { OutboxPacket, Role, WorkstationState } from '../lib/types';
 
 export type StreamHealth = 'connecting' | 'live' | 'polling' | 'offline';
 
@@ -24,7 +24,7 @@ interface WorkstationContextValue {
   step: (dtS?: number) => Promise<void>;
   resetCase: () => Promise<void>;
   setBlackout: (blackout: boolean) => Promise<void>;
-  acknowledge: (packet: OutboxPacket, directive: string) => Promise<boolean>;
+  acknowledge: (packet: OutboxPacket, directive: string, role?: Role) => Promise<boolean>;
   dismissNotice: () => void;
 }
 
@@ -196,8 +196,8 @@ export function WorkstationProvider({ children }: { children: ReactNode }) {
     }
   }, [accept]);
 
-  const acknowledge = useCallback(async (packet: OutboxPacket, directive: string) => {
-    return mutate(() => api.acknowledgePacket(packet.packet_id, directive),
+  const acknowledge = useCallback(async (packet: OutboxPacket, directive: string, role?: Role) => {
+    return mutate(() => api.acknowledgePacket(packet.packet_id, directive, role),
       'Directive sent. Acknowledgement receipt written to the local audit chain.');
   }, [mutate]);
 

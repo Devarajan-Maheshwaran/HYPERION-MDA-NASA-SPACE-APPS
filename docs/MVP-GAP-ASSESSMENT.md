@@ -10,6 +10,35 @@ and the existing PPT mapping in `docs/REQUIREMENTS-TRACEABILITY.md` Part A (6-sl
 template). If the attached deck is a newer revision, re-upload it for exact slide-number
 reconciliation. The functional gaps below are checked against current code, not only docs.
 
+## Status update — 2026-11-14 (live cockpit wave)
+
+The P0 runtime loop is now implemented and verified end-to-end over HTTP:
+
+- **P0-1 live clock/transport:** backend-owned 1 Hz mission clock, SSE `frame` + `state`,
+  pause/play/step/reset; cockpit boots directly into the live case at `/`.
+- **P0-2 persistence:** SQLite case store (`HYPERION_STATE_DB`, default `var/hyperion-state.db`).
+  A real process kill/restart preserved `t_s`, stage, running flag, packets, packet state,
+  history length, audit entry count and audit head; the chain still verifies.
+- **P0-3 closed workflow:** persisted S0–S4 FSM; S2 eye exam resolves to S3 or escalates to
+  S4; surgeon acknowledgement returns a hashed receipt and moves to `S4_SURGEON_ACKNOWLEDGED`.
+- **P0-4 honest lanes:** OSD-575 drawer, recorded-non-astronaut M6 replay selector, GOES pfu
+  cache-age/not-dose panel; real mode still never invents frames.
+- **P0-5 outbox:** habitat delay, rover blackout queue/release, DELIVERED-only ack,
+  explicit demo flight-surgeon role switch in the UI, restart-durable packets.
+- **P0-6 packaging:** `run_workstation.sh --offline` verified against an existing venv +
+  `web/dist`; Dockerfile + compose + healthcheck added (Docker daemon unavailable here, so
+  the image was not built in this sandbox). Reset endpoint verified.
+- **P1 benchmark:** measured FL/DP artifact rendered in Docs from
+  `artifacts/fl_dp_benchmark_results.json`; `--verify` reproduces it byte-for-byte.
+
+Still open: real-browser Playwright E2E (no browser binary in this sandbox), hosted
+authentication/authorization beyond demo `X-Role`, CI workflow, and the P1/P2 research or
+external-data gates. Verification now: `tests_api` **152 passed + 79 subtests**; full
+`PYTHONPATH=src pytest -q` **324 passed / 41 skipped / 207 subtests**; web **48 tests / 10
+files**, typecheck and production build clean; HTTP smoke **58/58**; FL/DP `--verify` OK.
+
+---
+
 ## Bottom line
 
 **The UI and API demo shell are working; the full end-to-end MVP is not complete.**

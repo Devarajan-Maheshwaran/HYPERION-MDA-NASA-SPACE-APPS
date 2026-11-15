@@ -46,7 +46,7 @@ describe('ML Architecture & Docs', () => {
     expect(screen.getAllByText('NOT_IMPLEMENTED').length).toBeGreaterThan(1);
     expect(screen.getAllByText(/SIMULATED_TOY_FEDAVG/).length).toBeGreaterThan(0);
     expect(screen.getByText('Zero Raw Private Health Data Stored On-Chain')).toBeTruthy();
-    expect(screen.getByText(/no chain exists/)).toBeTruthy();
+    expect(screen.getByText(/no blockchain or EVM deployment exists/)).toBeTruthy();
     expect(screen.getByText('— no EVM tx')).toBeTruthy();
     expect(screen.getByText('24.18 bpm')).toBeTruthy();
     expect(screen.getAllByRole('link').length).toBeGreaterThanOrEqual(5);

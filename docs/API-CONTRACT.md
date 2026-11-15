@@ -9,7 +9,14 @@ not authentication.
 ### `GET /api/state`
 Returns the full cockpit snapshot:
 - `data_source_mode`: `REAL_EMPIRICAL` | `SIMULATED_FALLBACK`
-- `telemetry_mode`: `REAL_EMPIRICAL` | `SIMULATED_FALLBACK` | `NOT_AVAILABLE`
+- `telemetry_mode`: `REAL_EMPIRICAL` | `SIMULATED_FALLBACK` | `RECORDED_REPLAY` | `NOT_AVAILABLE`
+- `case_id`, `session_id`, `clock` (`hz=1.0`, `period_s`, `running`,
+  `mission_seconds_per_demo_hour=60`, `tau_basis`)
+- `lifecycle`: persisted S0–S4 stage, tone, reason, `requested_exam`, `action_required`,
+  `acknowledged`, `since_mission_t_s`, recent transitions; labelled DEMO routing
+- `comms`: habitat profile, `blackout`, `packets[]` (QUEUED_BLACKOUT → IN_TRANSIT →
+  DELIVERED → ACKNOWLEDGED, SBAR, countdown, hashed receipt)
+- `replay`: recorded non-astronaut lane status, participant, window counts/index
 - `provenance_banner`: explicit non-flight simulation banner in fallback; real-mode banner
   states which sources are available / NOT AVAILABLE.
 - `habitat`, `habitat_label`, `habitat_options` (station / transit / lunar / rover)
@@ -26,12 +33,43 @@ Returns the full cockpit snapshot:
 - `audit`: local SHA-256 chain verification + entries; **not on-chain**
 
 ### `POST /api/scenario`
-Body: `{ "scenario_id"?: string, "habitat"?: "station|transit|lunar|rover", "mode"?: "REAL_EMPIRICAL|SIMULATED_FALLBACK" }`
+Body: `{ "scenario_id"?: string, "habitat"?: "station|transit|lunar|rover", "mode"?: "REAL_EMPIRICAL|SIMULATED_FALLBACK", "replay_participant"?: string }`
 - `scenario_id` ∈ `nominal-orbital`, `eva-ared-exercise`, `sans-stale-eye`, `spe-radiation`,
   `glycemic-circadian`. Seeds a labelled SIMULATED fallback state and returns `/api/state`.
 - `mode=REAL_EMPIRICAL` stops the stream, clears simulated frames/overlays and never invents
   telemetry. Returns `/api/state`.
+- `replay_participant` (e.g. `s1`) starts the committed M6 recorded-non-astronaut replay lane
+  at 1 Hz; `telemetry_mode=RECORDED_REPLAY`, `data_source_mode=REAL_EMPIRICAL`.
 - Roles: crew / ops / flight-surgeon.
+
+### `POST /api/transport`
+`{ "action": "play" | "pause" | "step", "dt_s"?: number }`. The backend owns the mission
+clock. `step` advances exactly `dt_s` (default 10) mission seconds, re-runs gates/lifecycle/
+outbox and returns state. Roles: crew / ops / flight-surgeon.
+
+### `POST /api/case/reset`
+Clears clinical case rows (frames, exams, calibrations, alerts, holds, outbox), re-seeds
+`nominal-orbital` at S0 and returns state. The audit chain is preserved and `case.reset`
+is appended. Roles: crew / ops / flight-surgeon.
+
+### `GET /api/stream/events`
+SSE. Emits `frame` (chart tick) and `state` (full cockpit snapshot) at 1 Hz while running.
+The cockpit consumes `state`; on disconnect it falls back to `GET /api/state` every 2 s and
+retries SSE after 2 s.
+
+## Surgeon outbox (demo comms)
+
+### `GET /api/surgeon/outbox`
+Returns `comms`, `blackout`, `packets[]`, `stage`. Roles: crew / ops / flight-surgeon.
+
+### `POST /api/surgeon/blackout`
+`{ "blackout": boolean }`. Queues/releases packets according to the habitat delay profile.
+Roles: crew / ops / flight-surgeon.
+
+### `POST /api/surgeon/acknowledge`
+`{ "packet_id": string, "directive": string }`. **Only `flight-surgeon`** may acknowledge,
+and only a `DELIVERED` packet (409 otherwise). Returns state + `receipt` with SHA-256.
+The directive is stored in the receipt; the audit block stores hashes/ids, not raw values.
 
 ## Exams (crew / flight-surgeon)
 
@@ -53,7 +91,11 @@ countermeasure log, re-evaluates gates, audits kinds only (no raw values). Retur
 
 - `POST /api/goes/refresh` (ops/researcher/flight-surgeon): attempts live NOAA SWPC fetch,
   best-effort caches JSON, returns availability. Never converts pfu → mGy/day.
-- `GET /api/ml/benchmark`: same honesty panel as `/api/state.ml_benchmark`.
+- `GET /api/ml/benchmark`: same honesty panel as `/api/state.ml_benchmark` (only when not live).
+- `GET /api/benchmark/fl-dp`: committed measured FL/DP artifact envelope
+  (`benchmark.available`, `sha256`, `path`, `results`). Read-only; no network. The threat
+  model is window-level, not participant-level.
+- `GET /api/replay`: recorded non-astronaut replay catalogue/status.
 - Existing endpoints remain: `/api/health`, `/api/session`, `/api/lanes`, `/api/registry`,
   `/api/lab/osd575`, `/api/research/m6`, calibration, manual, organs, scenarios/stream/SSE,
   alerts, `/api/audit`, `/api/audit/verify`.
@@ -64,3 +106,5 @@ countermeasure log, re-evaluates gates, audits kinds only (no raw values). Retur
 - Actions are exactly the four-string allow-list; no treatment advice.
 - Audit stores no raw measurement values; acknowledgement notes are hashed.
 - `contracts/HealthAudit.sol` is reference only; no EVM transaction exists.
+- Case state is durable in SQLite (`HYPERION_STATE_DB`); restart resumes clock/stage/outbox/audit.
+- `X-Case-Id` selects an isolated case; default `case-default`. Demo roles are spoofable headers.

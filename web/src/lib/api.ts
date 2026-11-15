@@ -160,10 +160,11 @@ export const api = {
     request<Envelope & { packets: import('./types').OutboxPacket[]; blackout: boolean }>(
       '/api/surgeon/blackout', { method: 'POST', body: JSON.stringify({ blackout }) },
     ),
-  acknowledgePacket: (packetId: string, directive: string) =>
+  acknowledgePacket: (packetId: string, directive: string, role?: Role) =>
     request<import('./types').WorkstationState & { receipt: import('./types').SurgeonReceipt }>(
       '/api/surgeon/acknowledge',
-      { method: 'POST', body: JSON.stringify({ packet_id: packetId, directive }) },
+      { method: 'POST', body: JSON.stringify({ packet_id: packetId, directive }),
+        headers: role ? { 'X-Role': role } : undefined },
     ),
   flDpBenchmark: () =>
     request<Envelope & { benchmark: import('./types').FlDpBenchmark }>('/api/benchmark/fl-dp'),

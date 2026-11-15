@@ -1,13 +1,16 @@
 # Frontend design system — Swiss Clinical Minimalist
 
-The web workstation is a light-theme clinical product UI, not a sci-fi HUD. It has exactly
-three top-level views behind a persistent 64px sticky header:
+The web workstation is a light-theme clinical product UI, not a sci-fi HUD. It has three
+top-level views behind a persistent 64px sticky header:
 
-1. `01. Overview` — the landing page at `/`, explaining the mission problem in about 15 seconds.
-2. `02. Crew Workstation` — `/workstation`, a 40/60 body-map + safety-gate workspace.
-3. `03. ML Architecture & Docs` — `/docs`, specifications, benchmarks, thresholds and audit ledger.
+1. `01. Crew Workstation` — **`/`, the boot route**: a live astronaut-in-seat cockpit.
+   `/workstation` redirects here.
+2. `02. Overview` — `/overview`, explaining the mission problem in about 15 seconds.
+3. `03. ML Architecture & Docs` — `/docs`, specifications, measured benchmarks, thresholds
+   and audit ledger.
 
-The backend API is unchanged. The browser still uses relative `/api/...` URLs only.
+The browser uses relative `/api/...` URLs only. The cockpit is SSE-first (`state` channel at
+1 Hz) with a 2 s polling fallback and 20 s live resync; the backend owns the mission clock.
 
 ## Tokens
 
@@ -37,13 +40,17 @@ colour is reserved for semantic clinical states and primary actions.
   that lists OSD-575 / GOES / WESAD availability and switches real vs simulated mode.
 - **Overview:** eyebrow, 36px headline, 680px subtitle, two CTAs, three problem→solution
   cards, and a clickable four-step architecture strip with two-sentence summaries.
-- **Crew Workstation:** habitat pills + five scenario buttons + explicit amber simulation
-  banner. Left 40%: medical-illustration SVG body map with six selectable nodes and an
-  organ detail card. Right 60%: Tab A (gate pipeline, one chart, triage) and Tab B
-  (readiness bar + PVT / ultrasound / vitals tools).
-- **Docs:** four spec cards, requested benchmark table with explicit provenance, measured
-  M6 rows, six-organ demo threshold table, five official NASA/CSA links, and the local
-  SHA-256 audit ledger. No chart is rendered on this page.
+- **Crew Workstation:** a control strip (LIVE 1.0 Hz clock, Pause/Play, Step +10 s, Reset
+  Case, five sim lanes + recorded replay selector, habitat/comms, rover blackout, SSE health)
+  above an explicit amber simulation banner. The workspace is a 3/5/4 grid on `xl`:
+  left = body map + organ detail + provenance panel; centre = S0–S4 lifecycle banner, live
+  gate strip, one telemetry chart, gate/triage tabs; right = always-visible instrument bay
+  (PVT / Eye ONSD / Vitals, auto-focused on an S2 hold) + store-and-forward comms outbox
+  with SBAR drawer and explicit demo flight-surgeon acknowledgement.
+- **Docs:** four spec cards, requested benchmark matrix, the measured FL/DP panel rendered
+  from `artifacts/fl_dp_benchmark_results.json` (regimes, CIs, σ sweep, Byzantine faults,
+  window-level threat model), measured M6 rows, six-organ demo threshold table, five
+  official NASA/CSA links, and the local SHA-256 audit ledger. No chart is rendered here.
 
 ## Components
 

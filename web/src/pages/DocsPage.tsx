@@ -165,7 +165,7 @@ export function DocsPage() {
           />
           <div className="flex flex-wrap items-center gap-2 border-b border-line bg-page px-5 py-3">
             <Badge tone="neutral"><ShieldCheck size={12} aria-hidden /> Zero Raw Private Health Data Stored On-Chain</Badge>
-            <span className="text-2xs text-ink-subtle">Clarification: no chain exists. This badge describes the local ledger’s measurement-free payload policy.</span>
+            <span className="text-2xs text-ink-subtle">Clarification: a local SHA-256 hash chain exists; no blockchain or EVM deployment exists. This badge describes the local ledger’s measurement-free payload policy.</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">

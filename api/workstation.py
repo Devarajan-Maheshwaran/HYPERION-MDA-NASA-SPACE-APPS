@@ -571,7 +571,7 @@ def register_workstation(app: FastAPI, store: Any, *, frame_at: Callable, maybe_
             readiness={**readiness, "freshness_tau_avg": freshness, "badges": badges},
             audit={"verification": audit_state, "entries": entries,
                    "contract": "HealthAudit.sol reference only — NOT deployed, NOT on-chain",
-                   "badge": "ZERO RAW PRIVATE HEALTH DATA ON-CHAIN (local hash chain; no chain exists)"},
+                   "badge": "ZERO RAW PRIVATE HEALTH DATA ON-CHAIN (local hash chain; no blockchain exists)"},
         )
         if not live:
             result["ml_benchmark"] = ml_benchmark

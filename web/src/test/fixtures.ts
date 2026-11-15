@@ -128,7 +128,7 @@ export function makeState(overrides: Partial<WorkstationState> = {}): Workstatio
     audit: {
       verification: { ok: true, entries: 1, reason: 'chain intact' },
       entries: [{ seq: 0, ts: '2026-11-14T12:00:00.000Z', event: 'scenario.start', role: 'crew', subject_id: 'demo-crew-1', lane: 'SIMULATED', detail: { scenario_id: 'nominal-orbital' }, prev_sha256: '0'.repeat(64), sha256: 'a'.repeat(64) }],
-      contract: 'HealthAudit.sol reference only — NOT deployed, NOT on-chain', badge: 'ZERO RAW PRIVATE HEALTH DATA ON-CHAIN',
+      contract: 'HealthAudit.sol reference only — NOT deployed, NOT on-chain', badge: 'ZERO RAW PRIVATE HEALTH DATA ON-CHAIN (local hash chain; no blockchain exists)',
     },
   };
   return { ...base, ...overrides };

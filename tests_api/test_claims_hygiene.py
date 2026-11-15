@@ -167,7 +167,8 @@ class BlockchainClaimTests(unittest.TestCase):
             client.post("/api/exams/vitals", json={"glucose_mgdl": 220, "bp_sys": 150,
                                                    "bp_dia": 95}, headers=CREW)
             state = client.get("/api/state").json()
-            self.assertIn("no chain exists", state["audit"]["badge"])
+            self.assertIn("no blockchain exists", state["audit"]["badge"])
+            self.assertIn("local hash chain", state["audit"]["badge"])
             self.assertIn("NOT deployed", state["audit"]["contract"])
             for entry in state["audit"]["entries"]:
                 detail = str(entry["detail"])

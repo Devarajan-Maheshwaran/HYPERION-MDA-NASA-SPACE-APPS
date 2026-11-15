@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Clock, Radio, Send, SignalZero } from 'lucide-react';
+import { CheckCircle2, Clock, Radio, Send, SignalZero, UserRoundCog } from 'lucide-react';
 import type { Comms, CommsState, OutboxPacket } from '../../lib/types';
 import { useWorkstation } from '../../state/WorkstationProvider';
 import { compactHash, num } from '../../lib/format';
@@ -20,9 +20,12 @@ export function CommsOutbox({ comms }: { comms: Comms }) {
   const [openPacket, setOpenPacket] = useState<string | null>(null);
   const [directive, setDirective] = useState('');
   const [sent, setSent] = useState<string | null>(null);
+  // Explicit, visible demo role switch. The API only lets `flight-surgeon` acknowledge;
+  // the cockpit must not silently spoof that header behind a crew-labelled button.
+  const [actAsSurgeon, setActAsSurgeon] = useState(false);
 
   const submit = async (packet: OutboxPacket): Promise<void> => {
-    const ok = await acknowledge(packet, directive);
+    const ok = await acknowledge(packet, directive, actAsSurgeon ? 'flight-surgeon' : undefined);
     if (ok) {
       setSent(packet.packet_id);
       setDirective('');
@@ -88,6 +91,7 @@ export function CommsOutbox({ comms }: { comms: Comms }) {
                   type="button"
                   className="mt-1.5 text-2xs font-medium text-primary-blue hover:underline"
                   aria-expanded={expanded}
+                  aria-label={expanded ? 'Hide SBAR packet' : 'Read SBAR packet'}
                   onClick={() => setOpenPacket(expanded ? null : packet.packet_id)}
                 >
                   {expanded ? 'Hide SBAR packet' : 'Read SBAR packet'}
@@ -106,8 +110,19 @@ export function CommsOutbox({ comms }: { comms: Comms }) {
 
                 {packet.comms_state === 'DELIVERED' ? (
                   <div className="mt-2.5 rounded-lg border border-primary-blue/25 bg-primary-blue-soft px-3 py-2.5">
-                    <label className="label-micro" htmlFor={`directive-${packet.packet_id}`}>
-                      Act as Flight Surgeon: Acknowledge &amp; Send Directive
+                    <label className="flex cursor-pointer items-start gap-2 text-2xs font-semibold text-ink">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-line-strong"
+                        checked={actAsSurgeon}
+                        onChange={(event) => setActAsSurgeon(event.target.checked)}
+                      />
+                      <span className="flex items-center gap-1.5">
+                        <UserRoundCog size={13} aria-hidden /> Act as Flight Surgeon (demo role)
+                      </span>
+                    </label>
+                    <label className="label-micro mt-2 block" htmlFor={`directive-${packet.packet_id}`}>
+                      Acknowledge &amp; send directive
                     </label>
                     <textarea
                       id={`directive-${packet.packet_id}`}
@@ -117,12 +132,13 @@ export function CommsOutbox({ comms }: { comms: Comms }) {
                       onChange={(event) => setDirective(event.target.value)}
                     />
                     <Button size="sm" variant="blue" className="mt-1.5 w-full" busy={busy}
-                            disabled={directive.trim().length === 0}
+                            disabled={!actAsSurgeon || directive.trim().length === 0}
                             onClick={() => void submit(packet)}>
                       <Send size={12} aria-hidden /> Acknowledge &amp; send directive
                     </Button>
                     <p className="mt-1 text-2xs leading-4 text-ink-label">
-                      Demo-grade role switch. The receipt is hashed into a local SHA-256 chain; no chain exists.
+                      Demo-grade role switch, not authentication. The receipt is hashed into the local
+                      SHA-256 chain; no blockchain or EVM transaction exists.
                     </p>
                   </div>
                 ) : null}
